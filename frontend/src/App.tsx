@@ -1,24 +1,36 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useAuthStore } from './store/auth-store';
 import { AuthPage } from './pages/AuthPage';
-import { Dashboard } from './pages/Dashboard';
+import { HomeHub } from './pages/HomeHub';
 import { GamePage } from './pages/GamePage';
-import { ModeSelectionPage } from './pages/ModeSelectionPage';
-import type { GameConfig } from './pages/ModeSelectionPage';
 import { LeaderboardPage } from './pages/LeaderboardPage';
+import { ProtectedRoute } from './components/ProtectedRoute';
+import { AdminRoute } from './components/AdminRoute';
+import { NotFoundPage } from './pages/NotFoundPage';
+import { ProfilePage } from './pages/ProfilePage';
+import { AdminPage } from './pages/AdminPage';
+import { OfflineBanner } from './components/OfflineBanner';
+import { ToastContainer } from './components/ToastContainer';
+import { AppShell } from './components/AppShell';
 
-type ViewState = 'dashboard' | 'mode-selection' | 'game' | 'leaderboard';
+function GamePageRoute() {
+  const navigate = useNavigate();
+  return (
+    <GamePage
+      onReturnToDashboard={() => navigate('/leaderboard')}
+    />
+  );
+}
 
-export default function App() {
-  const { isAuthenticated, isLoading, isHydrated, hydrate } = useAuthStore();
-  const [currentView, setCurrentView] = useState<ViewState>('dashboard');
-  const [gameConfig, setGameConfig] = useState<GameConfig | null>(null);
+function LeaderboardRoute() {
+  const navigate = useNavigate();
+  return <LeaderboardPage onReturnToDashboard={() => navigate('/home')} />;
+}
 
-  useEffect(() => {
-    hydrate();
-  }, [hydrate]);
-
-    // Show loading screen while checking stored tokens
+function AuthRoute() {
+  const { isAuthenticated, isHydrated, isLoading } = useAuthStore();
+  
   if (isLoading || !isHydrated) {
     return (
       <div
@@ -37,40 +49,45 @@ export default function App() {
       </div>
     );
   }
-
-  if (!isAuthenticated) {
-    return <AuthPage />;
+  
+  if (isAuthenticated) {
+    return <Navigate to="/home" replace />;
   }
+  
+  return <AuthPage />;
+}
 
-  if (currentView === 'mode-selection') {
-    return (
-      <ModeSelectionPage
-        onReturnToDashboard={() => setCurrentView('dashboard')}
-        onStartGame={(config) => {
-          setGameConfig(config);
-          setCurrentView('game');
-        }}
-      />
-    );
-  }
+export default function App() {
+  const { hydrate } = useAuthStore();
 
-  if (currentView === 'game' && gameConfig) {
-    return (
-      <GamePage
-        config={gameConfig}
-        onReturnToDashboard={() => setCurrentView('leaderboard')}
-      />
-    );
-  }
-
-  if (currentView === 'leaderboard') {
-    return <LeaderboardPage onReturnToDashboard={() => setCurrentView('dashboard')} />;
-  }
+  useEffect(() => {
+    hydrate();
+  }, [hydrate]);
 
   return (
-    <Dashboard 
-      onPlayGame={() => setCurrentView('mode-selection')}
-      onViewLeaderboard={() => setCurrentView('leaderboard')} 
-    />
+    <BrowserRouter>
+      <OfflineBanner />
+      <ToastContainer />
+      <Routes>
+        <Route path="/" element={<Navigate to="/home" replace />} />
+        
+        {/* Auth Route */}
+        <Route path="/auth" element={<AuthRoute />} />
+
+        {/* Protected Routes wrapped in AppShell */}
+        <Route element={<AppShell />}>
+          <Route path="/home" element={<ProtectedRoute><HomeHub /></ProtectedRoute>} />
+          <Route path="/game/:sessionId" element={<ProtectedRoute><GamePageRoute /></ProtectedRoute>} />
+          <Route path="/leaderboard" element={<ProtectedRoute><LeaderboardRoute /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+          
+          {/* Admin Route */}
+          <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
+        </Route>
+
+        {/* Fallback */}
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+    </BrowserRouter>
   );
 }

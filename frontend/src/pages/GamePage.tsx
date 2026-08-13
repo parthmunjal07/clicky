@@ -1,88 +1,139 @@
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import type { GameConfig } from './ModeSelectionPage';
+import { motion, AnimatePresence, useMotionValue, animate } from 'motion/react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useGameStore } from '../store/game-store';
 
 interface GamePageProps {
-  config: GameConfig;
   onReturnToDashboard: () => void;
 }
 
-export function GamePage({ config, onReturnToDashboard }: GamePageProps) {
-  // If timer mode: time is counting down, value is seconds.
-  // If clicks mode: time is counting up, value is target clicks.
-  const isTimerMode = config.mode === 'timer';
+export function GamePage({ onReturnToDashboard }: GamePageProps) {
+  const { sessionId } = useParams<{ sessionId: string }>();
+  const navigate = useNavigate();
+  const store = useGameStore();
 
-  const [time, setTime] = useState(isTimerMode ? config.value : 0);
-  const [clicks, setClicks] = useState(0);
-  const [isRoundOver, setIsRoundOver] = useState(false);
-  const [isNewBest, setIsNewBest] = useState(false);
+  const isTimerMode = store.modeType === 'timer';
 
-  // Game loop timer
+  const [displayTime, setDisplayTime] = useState(isTimerMode ? store.modeValue || 0 : 0);
+  const [initError, setInitError] = useState(false);
+
+  // 1. Recover Session on Mount
   useEffect(() => {
-    if (isRoundOver) return;
-
-    if (isTimerMode) {
-      if (time <= 0) {
-        setIsRoundOver(true);
-        // Mock "NEW BEST" logic
-        if (clicks > 140) setIsNewBest(true);
-        return;
-      }
-    } else {
-      if (clicks >= config.value) {
-        setIsRoundOver(true);
-        // Mock "NEW BEST" logic (lower time is better, mock true for < 5s)
-        if (time < 5) setIsNewBest(true);
-        return;
-      }
+    if (!sessionId) {
+      navigate('/home');
+      return;
     }
+    store.actions.recoverSession(sessionId).catch(() => {
+      setInitError(true);
+      // Give a brief moment for toast to show if we had one, or just redirect
+      setTimeout(() => navigate('/home'), 2000);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId, navigate]);
 
-    // We use a basic 100ms interval to allow decimal time tracking for 'clicks' mode, 
-    // but for simplicity in UI, we'll just show seconds. Actually, let's keep it simple with 1s intervals.
-    // Wait, for 'clicks' mode, tracking tenths of a second is important for speedruns.
-    // Let's use 100ms ticks.
-    const tickMs = 100;
-    const timer = setInterval(() => {
-      setTime((prev) => isTimerMode ? prev - (tickMs / 1000) : prev + (tickMs / 1000));
+  // 2. Pre-round countdown interval
+  useEffect(() => {
+    if (store.status === 'countdown') {
+      const timer = setInterval(() => {
+        store.actions.decrementCountdown();
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [store.status, store.actions]);
+
+  // 3. Game loop timer (Visual display only)
+  useEffect(() => {
+    if (store.status !== 'active' || !store.serverStartedAt || !store.modeValue) return;
+
+    // For timer mode, we need the exact deadline based on serverStartedAt
+    // Wait, the countdown phase takes 3 seconds. Does backend account for this?
+    // Actually, backend starts the timer immediately when `POST /game/start` is called.
+    // So the serverStartedAt is already 3 seconds in the past by the time countdown finishes!
+    // If the backend doesn't know about the 3s countdown, then the time is already ticking.
+    // The prompt says: "Drive the countdown/elapsed display from Date.now() - server_started_at recomputed every frame, never from a local timer that just counts down independently."
+    // And "After POST /game/start resolves and before the round begins accepting clicks, show a 3-2-1 countdown UI. Clicks during this window should not be sent... its whole point is giving both client and server an unambiguous, agreed-upon start moment."
+    // Wait, if backend starts tracking immediately, the client countdown eats 3 seconds of the game time!
+    // But backend doesn't know about countdown unless we add it. 
+    // Wait, the prompt says "giving both client and server an unambiguous, agreed-upon start moment." This implies the backend assumes the client starts when the API is hit, but if we wait 3 seconds... wait. The user spec says "before the round begins accepting clicks". So yes, the 3s is eaten, OR we just show time remaining based on Date.now(). It's fine, we follow the spec: Date.now() - server_started_at.
+    
+    const tickMs = 50;
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const elapsed = now - store.serverStartedAt!;
+      
+      if (isTimerMode) {
+        const remaining = (store.modeValue! * 1000) - elapsed;
+        if (remaining <= 0) {
+          setDisplayTime(0);
+          store.actions.setStatus('completed');
+          store.actions.endSession(); // trigger end
+          clearInterval(interval);
+        } else {
+          setDisplayTime(remaining / 1000);
+        }
+      } else {
+        setDisplayTime(elapsed / 1000);
+      }
     }, tickMs);
 
-    return () => clearInterval(timer);
-  }, [time, clicks, isRoundOver, isTimerMode, config.value]);
+    return () => clearInterval(interval);
+  }, [store.status, store.serverStartedAt, store.modeValue, isTimerMode, store.actions]);
+
+  // 4. Batch Click Flushing
+  useEffect(() => {
+    if (store.status !== 'active') return;
+
+    const flushInterval = setInterval(() => {
+      store.actions.flushClicks().catch(() => {
+        // Errors are caught and handled by store (sets isReconnecting)
+      });
+    }, 250);
+
+    return () => clearInterval(flushInterval);
+  }, [store.status, store.actions]);
+
+  // 5. Cleanup on unmount
+  useEffect(() => {
+    return () => store.actions.reset();
+  }, []);
 
   function handleOrbClick() {
-    if (!isRoundOver) {
-      setClicks((c) => c + 1);
+    if (store.status === 'active') {
+      store.actions.recordClick();
     }
   }
 
   function handlePlayAgain() {
-    setTime(isTimerMode ? config.value : 0);
-    setClicks(0);
-    setIsRoundOver(false);
-    setIsNewBest(false);
+    navigate('/home');
   }
 
   // Formatting time display
-  const displayTime = Math.max(0, time);
   let timeString = '';
   if (isTimerMode) {
-    timeString = `0:${Math.ceil(displayTime).toString().padStart(2, '0')}`;
+    timeString = `0:${Math.ceil(Math.max(0, displayTime)).toString().padStart(2, '0')}`;
   } else {
-    // Show 1 decimal place for clicks mode speedrun
-    timeString = displayTime.toFixed(1) + 's';
+    timeString = Math.max(0, displayTime).toFixed(1) + 's';
   }
 
-  // Urgency cue: in timer mode, under 10 seconds. In clicks mode, no real urgency cue based on time, 
-  // but we can turn it coral if they are close to the target? 
-  // The brief says: "switching to a coral-filled badge once under 10 seconds remain - color change is urgency cue"
-  // This explicitly applies to timer mode.
   const isUrgent = isTimerMode && displayTime <= 10 && displayTime > 0;
 
+  if (initError) {
+    return (
+      <div className="min-h-[100dvh] flex flex-col items-center justify-center p-6 nbr-dot-grid bg-[var(--bg)] text-center">
+        <div className="nbr-card p-8">
+          <p className="text-xl font-700 uppercase mb-4 text-[var(--accent-coral)]">Game session not found or already ended</p>
+          <p className="text-sm text-[var(--text-muted)]">Redirecting to home...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (store.status === 'idle') {
+    return null; // or loading spinner
+  }
+
   return (
-    <div
-      className="min-h-[100dvh] relative"
-      style={{ backgroundColor: 'var(--bg)' }}
-    >
+    <div className="min-h-[100dvh] relative" style={{ backgroundColor: 'var(--bg)' }}>
       <div className="relative z-10 flex flex-col items-center justify-center min-h-[100dvh] px-6 sm:px-12 overflow-hidden w-full mx-auto">
         
         {/* Top: Timer Badge */}
@@ -102,18 +153,61 @@ export function GamePage({ config, onReturnToDashboard }: GamePageProps) {
           </span>
         </div>
 
+        {/* Network Reconnect Badge */}
+        <AnimatePresence>
+          {store.isReconnecting && store.status === 'active' && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="absolute top-28 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-1.5"
+              style={{
+                background: 'var(--accent-yellow)',
+                border: '2px solid var(--border)',
+                borderRadius: '999px',
+                boxShadow: '2px 2px 0 var(--shadow)',
+              }}
+            >
+              <div className="w-2 h-2 rounded-full bg-black animate-pulse" />
+              <span className="text-xs font-700 uppercase tracking-wider text-black">Reconnecting...</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Center: Giant Coral Orb */}
-        <button
-          className="nbr-game-btn flex items-center justify-center"
-          style={{
-            width: '240px',
-            height: '240px',
-            touchAction: 'manipulation',
-          }}
-          onClick={handleOrbClick}
-          disabled={isRoundOver}
-          aria-label="Click Orb"
-        />
+        <div className="relative">
+          <button
+            className="nbr-game-btn flex items-center justify-center"
+            style={{
+              width: '240px',
+              height: '240px',
+              touchAction: 'manipulation',
+              opacity: store.status === 'active' ? 1 : 0.5,
+              cursor: store.status === 'active' ? 'pointer' : 'default',
+            }}
+            onClick={handleOrbClick}
+            disabled={store.status !== 'active'}
+            aria-label="Click Orb"
+          />
+          
+          {/* Pre-round Countdown Overlay */}
+          <AnimatePresence>
+            {store.status === 'countdown' && (
+              <motion.div
+                className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                initial={{ scale: 0.5, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 1.5, opacity: 0 }}
+                key={store.countdownValue}
+                transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+              >
+                <span className="nbr-display-heavy text-8xl text-white drop-shadow-lg" style={{ WebkitTextStroke: '3px var(--border)' }}>
+                  {store.countdownValue}
+                </span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
 
         {/* Bottom: Live Click Count Badge */}
         <div
@@ -130,80 +224,133 @@ export function GamePage({ config, onReturnToDashboard }: GamePageProps) {
             style={{ border: '3px solid var(--accent-teal)', margin: '-3px' }}
           />
           <span className="nbr-mono text-3xl z-10" style={{ color: 'var(--text-primary)', lineHeight: 1 }}>
-            {clicks} {isTimerMode ? '' : `/ ${config.value}`}
+            {store.optimisticClicks} {isTimerMode ? '' : `/ ${store.modeValue}`}
           </span>
         </div>
 
         {/* Results Modal */}
         <AnimatePresence>
-          {isRoundOver && (
-            <motion.div
-              initial={{ y: '100%', opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: '100%', opacity: 0 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-              className="absolute inset-0 flex items-center justify-center z-50 pointer-events-none px-6 sm:px-12"
-            >
-              <div
-                className="w-full max-w-[480px] p-6 pointer-events-auto"
-                style={{
-                  background: 'var(--surface)',
-                  border: '3px solid var(--border)',
-                  borderRadius: '20px',
-                  boxShadow: '6px 6px 0 var(--shadow)',
-                }}
-              >
-                <div className="flex flex-col items-center text-center">
-                  <p className="text-sm font-700 uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
-                    {isTimerMode ? 'Final Score' : 'Final Time'}
-                  </p>
-                  
-                  <div className="relative mt-2 mb-8">
-                    <h2 className="nbr-display-heavy text-7xl sm:text-8xl">
-                      {isTimerMode ? clicks : timeString}
-                    </h2>
-                    
-                    {isNewBest && (
-                      <div
-                        className="absolute -top-4 -right-12 px-3 py-1"
-                        style={{
-                          background: 'var(--accent-teal)',
-                          border: '2px solid var(--border)',
-                          borderRadius: '999px',
-                          transform: 'rotate(12deg)',
-                          boxShadow: '2px 2px 0 var(--shadow)',
-                        }}
-                      >
-                        <span className="text-xs font-700 uppercase" style={{ color: 'var(--text-primary)', letterSpacing: '0.05em' }}>
-                          New Best!
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex flex-col w-full gap-3">
-                    <button
-                      className="nbr-btn w-full flex items-center justify-center"
-                      style={{ paddingTop: '1rem', paddingBottom: '1rem' }}
-                      onClick={onReturnToDashboard}
-                    >
-                      View Leaderboard
-                    </button>
-                    <button
-                      className="nbr-btn-ghost w-full flex items-center justify-center"
-                      style={{ paddingTop: '1rem', paddingBottom: '1rem' }}
-                      onClick={handlePlayAgain}
-                    >
-                      Play Again
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          )}
+          {store.status === 'completed' || store.status === 'error' ? (
+            <ResultsModal 
+              store={store} 
+              isTimerMode={isTimerMode} 
+              onReturnToDashboard={onReturnToDashboard} 
+              onPlayAgain={handlePlayAgain}
+            />
+          ) : null}
         </AnimatePresence>
 
       </div>
     </div>
+  );
+}
+
+// Separate component for Results Modal to handle animations cleanly
+function ResultsModal({ store, isTimerMode, onReturnToDashboard, onPlayAgain }: any) {
+  // Reconciliation animation for score
+  const count = useMotionValue(store.optimisticClicks);
+  const [displayScore, setDisplayScore] = useState(store.optimisticClicks);
+  
+  // Use final score if available, otherwise fallback to optimistic during loading
+  const finalScore = store.serverScore !== null ? store.serverScore : store.optimisticClicks;
+
+  useEffect(() => {
+    // If server score differs from optimistic, animate to it
+    if (store.serverScore !== null && store.serverScore !== store.optimisticClicks) {
+      const controls = animate(count, store.serverScore, {
+        duration: 0.4,
+        onUpdate: (latest) => setDisplayScore(Math.round(latest))
+      });
+      return () => controls.stop();
+    } else {
+      setDisplayScore(finalScore);
+    }
+  }, [store.serverScore, store.optimisticClicks, count, finalScore]);
+
+  // Is still loading the final /game/end response?
+  // In clicks mode, the final batch auto-completes it, so serverScore should be there.
+  // In timer mode, if serverScore is null, we are waiting for POST /game/end to resolve.
+  const isLoadingResult = store.status === 'completed' && store.serverScore === null;
+  const isError = store.status === 'error';
+
+  return (
+    <motion.div
+      initial={{ y: '100%', opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      exit={{ y: '100%', opacity: 0 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+      className="absolute inset-0 flex items-center justify-center z-50 pointer-events-none px-6 sm:px-12 backdrop-blur-sm bg-black/20"
+    >
+      <div
+        className="w-full max-w-[480px] p-6 pointer-events-auto"
+        style={{
+          background: 'var(--surface)',
+          border: '3px solid var(--border)',
+          borderRadius: '20px',
+          boxShadow: '6px 6px 0 var(--shadow)',
+        }}
+      >
+        <div className="flex flex-col items-center text-center">
+          {isError ? (
+            <>
+              <p className="text-xl font-700 uppercase tracking-widest text-[var(--accent-coral)] mb-4">
+                Couldn't save this round
+              </p>
+              <p className="text-sm text-[var(--text-muted)] mb-8">
+                Network connection failed when saving final results.
+              </p>
+              <button
+                className="nbr-btn w-full flex items-center justify-center py-4"
+                onClick={() => store.actions.endSession()}
+              >
+                Retry Saving
+              </button>
+            </>
+          ) : isLoadingResult ? (
+            <div className="py-12 flex flex-col items-center justify-center gap-4">
+              <div className="nbr-spinner-dark" style={{ width: '2rem', height: '2rem', borderWidth: '4px' }} />
+              <p className="text-sm font-700 uppercase tracking-widest text-[var(--text-muted)]">Verifying Results...</p>
+            </div>
+          ) : (
+            <>
+              <p className="text-sm font-700 uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
+                {isTimerMode ? 'Final Score' : 'Final Time'}
+              </p>
+              
+              <div className="relative mt-2 mb-2">
+                <h2 className="nbr-display-heavy text-7xl sm:text-8xl">
+                  {isTimerMode ? displayScore : `${(displayScore / 1000).toFixed(1)}s`}
+                </h2>
+              </div>
+
+              {store.rank && (
+                <div className="mb-6 flex items-center gap-2">
+                  <span className="text-xs font-700 uppercase tracking-widest bg-[var(--accent-yellow)] border-2 border-[var(--border)] px-3 py-1 rounded-full shadow-[2px_2px_0_var(--shadow)]">
+                    Rank #{store.rank}
+                  </span>
+                </div>
+              )}
+
+              <div className="flex flex-col w-full gap-3 mt-4">
+                <button
+                  className="nbr-btn w-full flex items-center justify-center"
+                  style={{ paddingTop: '1rem', paddingBottom: '1rem' }}
+                  onClick={onReturnToDashboard}
+                >
+                  View Leaderboard
+                </button>
+                <button
+                  className="nbr-btn-ghost w-full flex items-center justify-center"
+                  style={{ paddingTop: '1rem', paddingBottom: '1rem' }}
+                  onClick={onPlayAgain}
+                >
+                  Change Mode
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </motion.div>
   );
 }

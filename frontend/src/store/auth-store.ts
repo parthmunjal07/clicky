@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { User } from '../lib/auth-api';
 import { configureAuth } from '../lib/api';
 import { authApi } from '../lib/auth-api';
+import { showToast } from './toast-store';
 
 interface AuthState {
   user: User | null;
@@ -33,6 +34,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
     },
     onAuthFailure: () => {
       get().clearAuth();
+      showToast('Session expired, please log in again');
     },
   });
 
