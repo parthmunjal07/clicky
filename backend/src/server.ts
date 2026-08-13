@@ -3,6 +3,7 @@ import helmet from 'helmet';
 import cors from 'cors';
 import { env } from './config/env.js';
 import authRouter, { errorHandler } from './auth/routes.js';
+import gameRouter, { startStaleSessionSweep } from './game/routes.js';
 
 const app = express();
 
@@ -14,7 +15,7 @@ app.use(
     origin: allowedOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Session-Id'],
   }),
 );
 
@@ -25,11 +26,17 @@ app.get('/health', (_req, res) => {
 });
 
 app.use(authRouter);
+app.use(gameRouter);
 app.use(errorHandler);
 
 app.listen(env.PORT, () => {
   console.log(`Server running on port ${env.PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV ?? 'development'}`);
+
+  // Start periodic sweep for abandoned/stale game sessions
+  startStaleSessionSweep();
+  console.log('Stale session sweep started (60s interval)');
 });
 
 export default app;
+

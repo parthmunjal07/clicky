@@ -1,111 +1,532 @@
+@import "tailwindcss";
+
+/* ─── Neobrutalism Token System ──────────────────────────────────────────── */
+
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+  /* Color */
+  --bg: #FBF3E7;              /* warm cream page background */
+  --surface: #FFFFFF;         /* card / panel backgrounds */
+  --border: #1A1A1A;          /* every border, 2.5–3px solid */
+  --shadow: #1A1A1A;          /* hard offset shadow, zero blur */
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+  --accent-coral: #FF6B4A;    /* primary CTA, click button */
+  --accent-yellow: #FFC93C;   /* secondary actions, highlights, badges */
+  --accent-teal: #3DDC97;     /* success states, positive deltas */
+  --accent-blue: #4C6FFF;     /* links, info states, secondary buttons */
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  --text-primary: #1A1A1A;
+  --text-muted: #6B6459;      /* warm grey — never cold */
 
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
+  /* Shape */
+  --radius: 16px;             /* consistent corner radius across ALL surfaces */
+  --border-width: 2.5px;
+  --shadow-offset: 4px;
+
+  /* Type */
+  --font-sans: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --font-display-heavy: "Archivo Black", sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
+@theme {
+  --font-sans: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --font-display-heavy: "Archivo Black", sans-serif;
 }
 
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
+/* ─── Base ────────────────────────────────────────────────────────────────── */
+
+* {
+  margin: 0;
+  padding: 0;
   box-sizing: border-box;
 }
 
+html {
+  color-scheme: light;
+}
+
 body {
-  margin: 0;
+  font-family: var(--font-sans);
+  background-color: var(--bg);
+  color: var(--text-primary);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-h1,
-h2 {
-  font-family: var(--heading);
+#root {
+  min-height: 100vh;
+}
+
+/* ─── Signature Interaction: Press-and-Release ────────────────────────────
+   At rest: element is offset up-left with 4px 4px 0 hard shadow.
+   On :active: element shifts down-right 4px, shadow collapses to 0.
+   This is the core feedback mechanic — not decorative.
+   ──────────────────────────────────────────────────────────────────────── */
+
+/* ─── Card / Surface ─────────────────────────────────────────────────────── */
+
+.nbr-card {
+  background: var(--surface);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-offset) var(--shadow-offset) 0 var(--shadow);
+}
+
+.nbr-card-sm {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: calc(var(--radius) - 4px);
+  box-shadow: 2px 2px 0 var(--shadow);
+}
+
+/* ─── Primary Button (Coral) ─────────────────────────────────────────────── */
+
+.nbr-btn {
+  position: relative;
+  background: var(--accent-coral);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius);
+  color: #ffffff;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: -0.01em;
+  padding: 0.875rem 2rem;
+  cursor: pointer;
+
+  /* At rest: offset up-left (shadow bottom-right = card floats above) */
+  box-shadow: var(--shadow-offset) var(--shadow-offset) 0 var(--shadow);
+  transform: translate(0, 0);
+
+  transition:
+    box-shadow 80ms ease-out,
+    transform 80ms ease-out;
+}
+
+.nbr-btn:hover:not(:disabled) {
+  /* Slight lift — pull back 1px before press */
+  box-shadow: 5px 5px 0 var(--shadow);
+  transform: translate(-1px, -1px);
+}
+
+.nbr-btn:active:not(:disabled) {
+  /* Press: shift +4px down-right, shadow collapses */
+  box-shadow: 0 0 0 var(--shadow);
+  transform: translate(var(--shadow-offset), var(--shadow-offset));
+}
+
+.nbr-btn:disabled {
+  background: #d4d4d4;
+  color: #737373;
+  box-shadow: none;
+  transform: translate(var(--shadow-offset), var(--shadow-offset));
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+.nbr-btn:focus-visible {
+  outline: 3px solid var(--accent-blue);
+  outline-offset: 3px;
+}
+
+/* ─── Secondary Button (Yellow) ──────────────────────────────────────────── */
+
+.nbr-btn-secondary {
+  background: var(--accent-yellow);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: -0.01em;
+  padding: 0.875rem 2rem;
+  cursor: pointer;
+  box-shadow: var(--shadow-offset) var(--shadow-offset) 0 var(--shadow);
+  transform: translate(0, 0);
+  transition:
+    box-shadow 80ms ease-out,
+    transform 80ms ease-out;
+}
+
+.nbr-btn-secondary:hover:not(:disabled) {
+  box-shadow: 5px 5px 0 var(--shadow);
+  transform: translate(-1px, -1px);
+}
+
+.nbr-btn-secondary:active:not(:disabled) {
+  box-shadow: 0 0 0 var(--shadow);
+  transform: translate(var(--shadow-offset), var(--shadow-offset));
+}
+
+.nbr-btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ─── Ghost / Link Button (Blue) ─────────────────────────────────────────── */
+
+.nbr-btn-ghost {
+  background: transparent;
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 1rem;
+  padding: 0.875rem 2rem;
+  cursor: pointer;
+  box-shadow: var(--shadow-offset) var(--shadow-offset) 0 var(--shadow);
+  transform: translate(0, 0);
+  transition:
+    box-shadow 80ms ease-out,
+    transform 80ms ease-out;
+}
+
+.nbr-btn-ghost:hover:not(:disabled) {
+  box-shadow: 5px 5px 0 var(--shadow);
+  transform: translate(-1px, -1px);
+}
+
+.nbr-btn-ghost:active:not(:disabled) {
+  box-shadow: 0 0 0 var(--shadow);
+  transform: translate(var(--shadow-offset), var(--shadow-offset));
+}
+
+/* ─── Game Button (Giant Coral Orb) ──────────────────────────────────────── */
+
+.nbr-game-btn {
+  background: var(--accent-coral);
+  border: 3px solid var(--border);
+  border-radius: 50%; /* Perfect circle */
+  cursor: pointer;
+  outline: none;
+  
+  /* Hero element shadow: 6px offset */
+  box-shadow: 6px 6px 0 var(--shadow);
+  transform: translate(0, 0);
+
+  /* The return transition has a tiny overshoot wobble */
+  transition:
+    box-shadow 150ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    transform 150ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* On press: fully depress (shadow 0, shifts down-right 6px) */
+/* Use an almost instant transition for the press to feel physically snappy */
+.nbr-game-btn:active:not(:disabled) {
+  box-shadow: 0 0 0 var(--shadow);
+  transform: translate(6px, 6px);
+  transition:
+    box-shadow 40ms ease-out,
+    transform 40ms ease-out;
+}
+
+.nbr-game-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ─── Inline Link ────────────────────────────────────────────────────────── */
+
+.nbr-link {
+  color: var(--accent-blue);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 2px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: inherit;
+  transition: color 100ms ease;
+}
+
+.nbr-link:hover {
+  color: var(--accent-coral);
+}
+
+/* ─── Input ──────────────────────────────────────────────────────────────── */
+
+.nbr-input {
+  width: 100%;
+  padding: 0.875rem 1.125rem;
+  background: var(--surface);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
   font-weight: 500;
-  color: var(--text-h);
+  font-size: 1rem;
+  outline: none;
+  transition:
+    box-shadow 120ms ease,
+    border-color 120ms ease;
+
+  /* At rest: subtle inset to read as "receptive" */
+  box-shadow: inset 2px 2px 0 rgba(26, 26, 26, 0.06);
 }
 
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
+.nbr-input::placeholder {
+  color: var(--text-muted);
+  font-weight: 400;
 }
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
+
+.nbr-input:focus {
+  box-shadow:
+    inset 2px 2px 0 rgba(26, 26, 26, 0.06),
+    0 0 0 3px var(--accent-blue);
 }
-p {
+
+.nbr-input.input-error {
+  border-color: var(--accent-coral);
+  box-shadow:
+    inset 2px 2px 0 rgba(26, 26, 26, 0.06),
+    0 0 0 3px rgba(255, 107, 74, 0.35);
+}
+
+/* ─── Display / Headline Type ────────────────────────────────────────────── */
+
+.nbr-display {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.nbr-display-heavy {
+  font-family: var(--font-display-heavy);
+  font-weight: 400; /* Archivo Black is already heavy */
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+
+.nbr-mono {
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+
+/* ─── Badge ──────────────────────────────────────────────────────────────── */
+
+.nbr-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.75rem;
+  border: 2px solid var(--border);
+  border-radius: 999px;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.nbr-badge-coral {
+  background: var(--accent-coral);
+  color: #ffffff;
+}
+
+.nbr-badge-teal {
+  background: var(--accent-teal);
+  color: var(--text-primary);
+}
+
+.nbr-badge-yellow {
+  background: var(--accent-yellow);
+  color: var(--text-primary);
+}
+
+/* ─── Error Banner ───────────────────────────────────────────────────────── */
+
+.nbr-error-banner {
+  padding: 0.75rem 1rem;
+  background: #FFF0ED;
+  border: 2px solid var(--accent-coral);
+  border-radius: var(--radius);
+  color: var(--accent-coral);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+/* ─── Divider ─────────────────────────────────────────────────────────────── */
+
+.nbr-divider {
+  border: none;
+  border-top: 2px solid var(--border);
+  opacity: 0.12;
   margin: 0;
 }
 
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
+/* ─── Spinner ─────────────────────────────────────────────────────────────── */
+
+@keyframes nbr-spin {
+  to { transform: rotate(360deg); }
 }
 
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+.nbr-spinner {
+  width: 1.125rem;
+  height: 1.125rem;
+  border: 2.5px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: nbr-spin 0.7s linear infinite;
+}
+
+/* Dark spinner variant (on light backgrounds) */
+.nbr-spinner-dark {
+  width: 1.125rem;
+  height: 1.125rem;
+  border: 2.5px solid rgba(26, 26, 26, 0.2);
+  border-top-color: var(--text-primary);
+  border-radius: 50%;
+  animation: nbr-spin 0.7s linear infinite;
+}
+
+/* ─── Score "Thunk" Animation ────────────────────────────────────────────── 
+   Numbers overshoot then settle — echoes press-and-release physics.
+   Apply with: animation: nbr-thunk 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)
+   ──────────────────────────────────────────────────────────────────────── */
+
+@keyframes nbr-thunk {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.18) translateY(-2px); }
+  70%  { transform: scale(0.96) translateY(2px); }
+  100% { transform: scale(1) translateY(0); }
+}
+
+.nbr-thunk {
+  animation: nbr-thunk 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* ─── Dot-grid Background Texture ────────────────────────────────────────── */
+
+.nbr-dot-grid {
+  background-image: radial-gradient(circle, rgba(26, 26, 26, 0.12) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* ─── Mode Selection Classes ─────────────────────────────────────────────── */
+
+.nbr-mode-card {
+  background: var(--surface);
+  border: var(--border-width) solid var(--border);
+  border-radius: 20px;
+  cursor: pointer;
+  box-shadow: var(--shadow-offset) var(--shadow-offset) 0 var(--shadow);
+  transform: translate(0, 0);
+  transition:
+    background-color 80ms ease,
+    box-shadow 80ms ease,
+    transform 80ms ease;
+}
+
+.nbr-mode-card-active {
+  background: var(--accent-yellow);
+  box-shadow: 0 0 0 var(--shadow);
+  transform: translate(var(--shadow-offset), var(--shadow-offset));
+}
+
+.nbr-pill {
+  background: var(--surface);
+  border: var(--border-width) solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  box-shadow: 3px 3px 0 var(--shadow);
+  transform: translate(0, 0);
+  transition:
+    background-color 80ms ease,
+    box-shadow 80ms ease,
+    transform 80ms ease;
+}
+
+.nbr-pill-active {
+  background: var(--accent-teal);
+  box-shadow: 0 0 0 var(--shadow);
+  transform: translate(3px, 3px);
+}
+
+/* ─── Segmented Control ──────────────────────────────────────────────────── */
+
+.nbr-segment-group {
+  display: flex;
+  background: var(--surface);
+  border: var(--border-width) solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow-offset) var(--shadow-offset) 0 var(--shadow);
+  overflow: hidden; /* clip the inner borders correctly */
+}
+
+.nbr-segment-btn {
+  flex: 1;
+  padding: 0.75rem 0.5rem;
+  background: var(--surface);
+  border: none;
+  border-right: var(--border-width) solid var(--border);
+  font-family: var(--font-sans);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  box-shadow: none;
+}
+
+.nbr-segment-btn:last-child {
+  border-right: none;
+}
+
+.nbr-segment-btn-active {
+  background: var(--accent-yellow);
+  /* Simulate a pressed-in effect within the group using inner shadow */
+  box-shadow: inset 4px 4px 0 rgba(26, 26, 26, 0.15);
+}
+
+/* ─── Leaderboard Rows ───────────────────────────────────────────────────── */
+
+.nbr-lb-row {
+  background: var(--surface);
+  border: var(--border-width) solid var(--border);
+  border-radius: 14px;
+  box-shadow: 2px 2px 0 var(--shadow);
+  transform: translate(0, 0);
+}
+
+.nbr-lb-row-gold {
+  background: var(--accent-yellow);
+}
+
+.nbr-lb-row-user {
+  background: #FFDED6; /* Soft coral tint */
+  border-width: 3.5px;
+}
+
+/* ─── Animations ─────────────────────────────────────────────────────────── */
+
+@keyframes nbr-pulse-press {
+  0% {
+    transform: translate(0, 0);
+    box-shadow: 2px 2px 0 var(--shadow);
+  }
+  30% {
+    transform: translate(2px, 2px);
+    box-shadow: 0 0 0 var(--shadow);
+  }
+  100% {
+    transform: translate(0, 0);
+    box-shadow: 2px 2px 0 var(--shadow);
+  }
+}
+
+.nbr-animate-pulse-press {
+  animation: nbr-pulse-press 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
