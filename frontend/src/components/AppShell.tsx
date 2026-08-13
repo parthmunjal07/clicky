@@ -3,14 +3,12 @@ import { useAuthStore } from '../store/auth-store';
 import { authApi } from '../lib/auth-api';
 
 export function AppShell() {
-  const { user, refreshToken, clearAuth } = useAuthStore();
+  const { user, clearAuth } = useAuthStore();
   const navigate = useNavigate();
 
   async function handleLogout() {
     try {
-      if (refreshToken) {
-        await authApi.logout(refreshToken);
-      }
+      await authApi.logout();
     } catch {
       // ignore API failure, still log out locally
     }

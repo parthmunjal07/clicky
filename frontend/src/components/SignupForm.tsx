@@ -30,7 +30,7 @@ function getPasswordStrength(password: string): {
 }
 
 export function SignupForm({ onSwitchToLogin }: SignupFormProps) {
-  const setAuth = useAuthStore((s) => s.setAuth);
+  const hydrate = useAuthStore((s) => s.hydrate);
 
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -70,12 +70,12 @@ export function SignupForm({ onSwitchToLogin }: SignupFormProps) {
 
     setIsSubmitting(true);
     try {
-      const res = await authApi.signup({
+      await authApi.signup({
         username: username.trim(),
         email: email.trim().toLowerCase(),
         password,
       });
-      setAuth(res.user, res.accessToken, res.refreshToken);
+      await hydrate();
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.details) {

@@ -305,29 +305,7 @@ export async function logout(refreshToken: string) {
     );
 }
 
-/**
- * Get the current user's profile (no sensitive fields).
- */
-export async function getProfile(userId: string) {
-  const [user] = await db
-    .select({
-      id: users.id,
-      username: users.username,
-      email: users.email,
-      role: users.role,
-      createdAt: users.createdAt,
-      updatedAt: users.updatedAt,
-    })
-    .from(users)
-    .where(eq(users.id, userId))
-    .limit(1);
 
-  if (!user) {
-    throw new AppError(404, 'User not found');
-  }
-
-  return user;
-}
 
 /**
  * Paginated list of users (admin-only).

@@ -17,17 +17,14 @@ interface GameState {
   serverScore: number | null; // finalized score/elapsedMs
   rank: number | null;
   
-  isReconnecting: boolean;
   pendingClicks: number;
   seqNum: number;
   isFlushing: boolean;
-  retryDelayMs: number;
-  retryAfter: number;
 
   actions: {
     startGame: (modeType: GameMode, modeValue: number) => Promise<string>;
     recoverSession: (sessionId: string) => Promise<void>;
-    recordClick: () => void;
+    addPendingClicks: (count: number) => void;
     flushClicks: () => Promise<void>;
     endSession: () => Promise<void>;
     decrementCountdown: () => void;
@@ -47,19 +44,16 @@ const INITIAL_STATE = {
   serverClicks: 0,
   serverScore: null,
   rank: null,
-  isReconnecting: false,
   pendingClicks: 0,
   seqNum: 0,
   isFlushing: false,
-  retryDelayMs: 500,
-  retryAfter: 0,
 };
 
 export const useGameStore = create<GameState>((set, get) => ({
   ...INITIAL_STATE,
   actions: {
     startGame: async (modeType: GameMode, modeValue: number) => {
-      set({ status: 'idle', isReconnecting: false });
+      set({ status: 'idle' });
       const res = await gameApi.startGame(modeType, modeValue);
       set({
         sessionId: res.sessionId,
@@ -74,10 +68,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         rank: null,
         pendingClicks: 0,
         seqNum: 0,
-        isReconnecting: false,
         isFlushing: false,
-        retryDelayMs: 500,
-        retryAfter: 0,
       });
       return res.sessionId;
     },
@@ -102,25 +93,22 @@ export const useGameStore = create<GameState>((set, get) => ({
         rank: res.rank ?? null,
         pendingClicks: 0,
         seqNum: 0,
-        isReconnecting: false,
         isFlushing: false,
-        retryDelayMs: 500,
-        retryAfter: 0,
       });
     },
 
-    recordClick: () => {
+    addPendingClicks: (count: number) => {
       const { status } = get();
       if (status !== 'active') return;
       set((state) => ({
-        optimisticClicks: state.optimisticClicks + 1,
-        pendingClicks: state.pendingClicks + 1,
+        optimisticClicks: state.optimisticClicks + count,
+        pendingClicks: state.pendingClicks + count,
       }));
     },
 
     flushClicks: async () => {
-      const { sessionId, pendingClicks, seqNum, status, isFlushing, retryAfter } = get();
-      if (!sessionId || status !== 'active' || pendingClicks === 0 || isFlushing || Date.now() < retryAfter) return;
+      const { sessionId, pendingClicks, seqNum, status, isFlushing } = get();
+      if (!sessionId || status !== 'active' || pendingClicks === 0 || isFlushing) return;
 
       const currentSeqNum = seqNum + 1;
       const countToFlush = pendingClicks;
@@ -133,10 +121,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         set(() => {
           const updates: Partial<GameState> = {
             serverClicks: res.clicks,
-            isReconnecting: false,
             isFlushing: false,
-            retryDelayMs: 500,
-            retryAfter: 0,
           };
           if (res.finalized) {
             updates.status = 'completed';
@@ -145,17 +130,8 @@ export const useGameStore = create<GameState>((set, get) => ({
           return updates;
         });
       } catch (err) {
-        // Network drop: put clicks back into pending buffer, mark reconnecting, increment backoff
-        set((state) => {
-          const nextDelay = Math.min(state.retryDelayMs * 2, 5000);
-          return {
-            pendingClicks: state.pendingClicks + countToFlush,
-            isReconnecting: true,
-            isFlushing: false,
-            retryDelayMs: nextDelay,
-            retryAfter: Date.now() + state.retryDelayMs,
-          };
-        });
+        // Unbroken connection enforcement: Fail the session immediately on network drop
+        set({ status: 'error', isFlushing: false });
         throw err;
       }
     },

@@ -14,14 +14,10 @@ export interface User {
 interface AuthResponse {
   message: string;
   user: User;
-  accessToken: string;
-  refreshToken: string;
 }
 
 interface TokenResponse {
   message: string;
-  accessToken: string;
-  refreshToken: string;
 }
 
 interface ProfileResponse {
@@ -47,11 +43,11 @@ export const authApi = {
   login: (data: { email: string; password: string }) =>
     api.post<AuthResponse>(`${API_BASE}/login`, data),
 
-  refresh: (refreshToken: string) =>
-    api.post<TokenResponse>(`${API_BASE}/refresh`, { refreshToken }),
+  refresh: () =>
+    api.post<TokenResponse>(`${API_BASE}/refresh`, {}),
 
-  logout: (refreshToken: string) =>
-    api.post<{ message: string }>(`${API_BASE}/logout`, { refreshToken }),
+  logout: () =>
+    api.post<{ message: string }>(`${API_BASE}/logout`, {}),
 
   getProfile: () => api.get<ProfileResponse>(`${API_BASE}/me`),
 

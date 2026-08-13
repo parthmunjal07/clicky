@@ -7,32 +7,22 @@ type FetchOptions = {
   headers?: Record<string, string>;
 };
 
-let getAccessToken: (() => string | null) | null = null;
-let onTokenRefresh: ((accessToken: string, refreshToken: string) => void) | null = null;
 let onAuthFailure: (() => void) | null = null;
-let getRefreshToken: (() => string | null) | null = null;
 
 export function configureAuth(config: {
-  getAccessToken: () => string | null;
-  getRefreshToken: () => string | null;
-  onTokenRefresh: (accessToken: string, refreshToken: string) => void;
   onAuthFailure: () => void;
 }) {
-  getAccessToken = config.getAccessToken;
-  getRefreshToken = config.getRefreshToken;
-  onTokenRefresh = config.onTokenRefresh;
   onAuthFailure = config.onAuthFailure;
 }
 
+// Ensure the refresh request itself sends cookies
 async function refreshAccessToken(): Promise<boolean> {
-  const refreshToken = getRefreshToken?.();
-  if (!refreshToken) return false;
-
   try {
     const res = await fetch(`${API_BASE}/refresh`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken }),
+      body: JSON.stringify({}),
+      credentials: 'include',
     });
 
     if (!res.ok) {
@@ -40,8 +30,6 @@ async function refreshAccessToken(): Promise<boolean> {
       return false;
     }
 
-    const data = await res.json();
-    onTokenRefresh?.(data.accessToken, data.refreshToken);
     return true;
   } catch {
     onAuthFailure?.();
@@ -55,34 +43,28 @@ export async function apiRequest<T>(
 ): Promise<T> {
   const { method = 'GET', body, headers = {} } = options;
 
-  const token = getAccessToken?.();
   const requestHeaders: Record<string, string> = {
     'Content-Type': 'application/json',
     ...headers,
   };
 
-  if (token) {
-    requestHeaders['Authorization'] = `Bearer ${token}`;
-  }
-
   let res = await fetch(url, {
     method,
     headers: requestHeaders,
     body: body ? JSON.stringify(body) : undefined,
+    credentials: 'include', // ALways send cookies!
   });
 
-  // If 401 and we have a refresh token, try refreshing
-  if (res.status === 401 && getRefreshToken?.()) {
+  // If 401, attempt refresh (unless the request itself was a refresh or login)
+  if (res.status === 401 && !url.includes('/refresh') && !url.includes('/login') && !url.includes('/signup') && !url.includes('/logout')) {
     const refreshed = await refreshAccessToken();
     if (refreshed) {
-      const newToken = getAccessToken?.();
-      if (newToken) {
-        requestHeaders['Authorization'] = `Bearer ${newToken}`;
-      }
+      // Retry the original request
       res = await fetch(url, {
         method,
         headers: requestHeaders,
         body: body ? JSON.stringify(body) : undefined,
+        credentials: 'include',
       });
     }
   }
@@ -118,8 +100,12 @@ export class ApiError extends Error {
 
 export const api = {
   get: <T>(url: string) => apiRequest<T>(url),
-  post: <T>(url: string, body: unknown) =>
+  post: <T>(url: string, body?: unknown) =>
     apiRequest<T>(url, { method: 'POST', body }),
+  patch: <T>(url: string, body?: unknown) =>
+    apiRequest<T>(url, { method: 'PATCH', body }),
+  delete: <T>(url: string, body?: unknown) =>
+    apiRequest<T>(url, { method: 'DELETE', body }),
 };
 
 export { API_BASE, ADMIN_BASE };

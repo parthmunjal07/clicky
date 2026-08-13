@@ -4,6 +4,7 @@ import { gameSessions } from '../db/schema.js';
 import { hotStore } from './hotStore.js';
 import type { HotStoreEntry } from './hotStore.js';
 import { AppError } from '../auth/service.js';
+import { validateGamePhysics } from './validation.js';
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -234,6 +235,11 @@ export async function endSession(userId: string, sessionId: string) {
 
   // ── Persist to DB ──
   const score = entry.clicks;
+  const elapsedMs = now - entry.serverStartedAt;
+  
+  // ── Final physics validation ──
+  validateGamePhysics(score, elapsedMs);
+
   const serverEndedAt = new Date();
 
   await db
@@ -446,6 +452,10 @@ async function finalizeClicksMode(
   now: number,
 ) {
   const elapsedMs = now - entry.serverStartedAt;
+  
+  // ── Final physics validation ──
+  validateGamePhysics(entry.clicks, elapsedMs);
+
   const serverEndedAt = new Date(now);
 
   await db

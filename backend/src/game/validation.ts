@@ -45,3 +45,24 @@ export const clickBatchSchema = z
 export type StartGameInput = z.infer<typeof startGameSchema>;
 export type ClickInput = z.infer<typeof clickSchema>;
 export type ClickBatchInput = z.infer<typeof clickBatchSchema>;
+
+// ─── Physics Validation ─────────────────────────────────────────────────────
+
+export const MAX_CPS = 20;
+
+/**
+ * Validates the physics of a game session to prevent superhuman/bot submissions.
+ * It checks the overall click rate across the entire duration of the session.
+ */
+export function validateGamePhysics(clicks: number, elapsedMs: number): void {
+  // Add a small buffer for elapsedMs in case the batch arrives instantly
+  const actualElapsed = Math.max(elapsedMs, 100);
+  const cps = (clicks * 1000) / actualElapsed;
+
+  if (cps > MAX_CPS) {
+    throw new Error(
+      `Cheat detected: Inhuman click rate of ${cps.toFixed(1)} CPS (max ${MAX_CPS}). Session discarded.`
+    );
+  }
+}
+

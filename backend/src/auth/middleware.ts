@@ -25,14 +25,12 @@ export function authenticate(
   res: Response,
   next: NextFunction,
 ): void {
-  const authHeader = req.headers.authorization;
+  const token = req.cookies.accessToken;
 
-  if (!authHeader?.startsWith('Bearer ')) {
-    res.status(401).json({ error: 'Missing or malformed authorization header' });
+  if (!token) {
+    res.status(401).json({ error: 'Missing authentication cookie' });
     return;
   }
-
-  const token = authHeader.slice(7);
 
   try {
     const decoded = jwt.verify(token, env.JWT_ACCESS_SECRET) as JwtPayload;

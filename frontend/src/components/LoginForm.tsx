@@ -10,7 +10,7 @@ interface LoginFormProps {
 }
 
 export function LoginForm({ onSwitchToSignup }: LoginFormProps) {
-  const setAuth = useAuthStore((s) => s.setAuth);
+  const hydrate = useAuthStore((s) => s.hydrate);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -37,11 +37,11 @@ export function LoginForm({ onSwitchToSignup }: LoginFormProps) {
 
     setIsSubmitting(true);
     try {
-      const res = await authApi.login({
+      await authApi.login({
         email: email.trim().toLowerCase(),
         password,
       });
-      setAuth(res.user, res.accessToken, res.refreshToken);
+      await hydrate();
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.details) {

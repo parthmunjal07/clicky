@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useMotionValue, animate } from 'motion/react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGameStore } from '../store/game-store';
@@ -16,6 +16,8 @@ export function GamePage({ onReturnToDashboard }: GamePageProps) {
 
   const [displayTime, setDisplayTime] = useState(isTimerMode ? store.modeValue || 0 : 0);
   const [initError, setInitError] = useState(false);
+  const localPendingClicksRef = useRef(0);
+  const clickBadgeRef = useRef<HTMLSpanElement>(null);
 
   // 1. Recover Session on Mount
   useEffect(() => {
@@ -84,6 +86,10 @@ export function GamePage({ onReturnToDashboard }: GamePageProps) {
     if (store.status !== 'active') return;
 
     const flushInterval = setInterval(() => {
+      if (localPendingClicksRef.current > 0) {
+        store.actions.addPendingClicks(localPendingClicksRef.current);
+        localPendingClicksRef.current = 0;
+      }
       store.actions.flushClicks().catch(() => {
         // Errors are caught and handled by store (sets isReconnecting)
       });
@@ -99,7 +105,13 @@ export function GamePage({ onReturnToDashboard }: GamePageProps) {
 
   function handleOrbClick() {
     if (store.status === 'active') {
-      store.actions.recordClick();
+      localPendingClicksRef.current += 1;
+      
+      // Instantaneous DOM update for 0ms latency without triggering a React rerender
+      if (clickBadgeRef.current) {
+        const total = store.optimisticClicks + localPendingClicksRef.current;
+        clickBadgeRef.current.innerText = `${total}${isTimerMode ? '' : ` / ${store.modeValue}`}`;
+      }
     }
   }
 
@@ -153,26 +165,7 @@ export function GamePage({ onReturnToDashboard }: GamePageProps) {
           </span>
         </div>
 
-        {/* Network Reconnect Badge */}
-        <AnimatePresence>
-          {store.isReconnecting && store.status === 'active' && (
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="absolute top-28 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-1.5"
-              style={{
-                background: 'var(--accent-yellow)',
-                border: '2px solid var(--border)',
-                borderRadius: '999px',
-                boxShadow: '2px 2px 0 var(--shadow)',
-              }}
-            >
-              <div className="w-2 h-2 rounded-full bg-black animate-pulse" />
-              <span className="text-xs font-700 uppercase tracking-wider text-black">Reconnecting...</span>
-            </motion.div>
-          )}
-        </AnimatePresence>
+
 
         {/* Center: Giant Coral Orb */}
         <div className="relative">
@@ -223,8 +216,8 @@ export function GamePage({ onReturnToDashboard }: GamePageProps) {
             className="absolute inset-0 rounded-full"
             style={{ border: '3px solid var(--accent-teal)', margin: '-3px' }}
           />
-          <span className="nbr-mono text-3xl z-10" style={{ color: 'var(--text-primary)', lineHeight: 1 }}>
-            {store.optimisticClicks} {isTimerMode ? '' : `/ ${store.modeValue}`}
+          <span ref={clickBadgeRef} className="nbr-mono text-3xl z-10" style={{ color: 'var(--text-primary)', lineHeight: 1 }}>
+            {store.optimisticClicks + localPendingClicksRef.current} {isTimerMode ? '' : `/ ${store.modeValue}`}
           </span>
         </div>
 
@@ -294,16 +287,16 @@ function ResultsModal({ store, isTimerMode, onReturnToDashboard, onPlayAgain }: 
           {isError ? (
             <>
               <p className="text-xl font-700 uppercase tracking-widest text-[var(--accent-coral)] mb-4">
-                Couldn't save this round
+                Connection Lost
               </p>
               <p className="text-sm text-[var(--text-muted)] mb-8">
-                Network connection failed when saving final results.
+                Score invalidated for anti-cheat. Official runs require an unbroken connection.
               </p>
               <button
                 className="nbr-btn w-full flex items-center justify-center py-4"
-                onClick={() => store.actions.endSession()}
+                onClick={onReturnToDashboard}
               >
-                Retry Saving
+                Return to Dashboard
               </button>
             </>
           ) : isLoadingResult ? (

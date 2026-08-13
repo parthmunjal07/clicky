@@ -19,6 +19,25 @@ function getMeta(req: Request): { userAgent?: string; ip?: string } {
   return meta;
 }
 
+const isProd = process.env.NODE_ENV === 'production';
+const accessCookieOptions = {
+  httpOnly: true,
+  secure: isProd,
+  sameSite: 'lax' as const,
+  maxAge: 15 * 60 * 1000, // 15 minutes
+};
+const refreshCookieOptions = {
+  httpOnly: true,
+  secure: isProd,
+  sameSite: 'lax' as const,
+  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+};
+
+function setTokens(res: Response, accessToken: string, refreshToken: string) {
+  res.cookie('accessToken', accessToken, accessCookieOptions);
+  res.cookie('refreshToken', refreshToken, refreshCookieOptions);
+}
+
 router.post(
   '/auth/signup',
   async (req: Request, res: Response, next: NextFunction) => {
@@ -26,11 +45,11 @@ router.post(
       const data = signupSchema.parse(req.body);
       const result = await authService.signup(data, getMeta(req));
 
+      setTokens(res, result.accessToken, result.refreshToken);
+
       res.status(201).json({
         message: 'Account created successfully',
         user: result.user,
-        accessToken: result.accessToken,
-        refreshToken: result.refreshToken,
       });
     } catch (err) {
       next(err);
@@ -47,11 +66,11 @@ router.post(
       const data = loginSchema.parse(req.body);
       const result = await authService.login(data, getMeta(req));
 
+      setTokens(res, result.accessToken, result.refreshToken);
+
       res.status(200).json({
         message: 'Login successful',
         user: result.user,
-        accessToken: result.accessToken,
-        refreshToken: result.refreshToken,
       });
     } catch (err) {
       next(err);
@@ -65,13 +84,16 @@ router.post(
   '/auth/refresh',
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { refreshToken } = refreshSchema.parse(req.body);
+      const refreshToken = req.cookies.refreshToken;
+      if (!refreshToken) {
+        throw new AppError(401, 'No refresh token provided');
+      }
+
       const tokens = await authService.refresh(refreshToken, getMeta(req));
+      setTokens(res, tokens.accessToken, tokens.refreshToken);
 
       res.status(200).json({
         message: 'Tokens refreshed successfully',
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken,
       });
     } catch (err) {
       next(err);
@@ -86,8 +108,13 @@ router.post(
   authenticate,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { refreshToken } = refreshSchema.parse(req.body);
-      await authService.logout(refreshToken);
+      const refreshToken = req.cookies.refreshToken;
+      if (refreshToken) {
+        await authService.logout(refreshToken);
+      }
+      
+      res.clearCookie('accessToken');
+      res.clearCookie('refreshToken');
 
       res.status(200).json({ message: 'Logged out successfully' });
     } catch (err) {
@@ -96,20 +123,7 @@ router.post(
   },
 );
 
-// ─── GET /auth/me ───────────────────────────────────────────────────────────
 
-router.get(
-  '/auth/me',
-  authenticate,
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const user = await authService.getProfile(req.user!.id);
-      res.status(200).json({ user });
-    } catch (err) {
-      next(err);
-    }
-  },
-);
 
 // ─── GET /admin/users ───────────────────────────────────────────────────────
 
