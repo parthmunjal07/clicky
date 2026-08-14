@@ -6,6 +6,7 @@ import { env } from './config/env.js';
 import authRouter, { errorHandler } from './auth/routes.js';
 import gameRouter, { startStaleSessionSweep } from './game/routes.js';
 import usersRouter from './users/routes.js';
+import leaderboardRouter from './leaderboard/routes.js';
 
 const app = express();
 
@@ -30,6 +31,7 @@ app.get('/health', (_req, res) => {
 
 app.use(authRouter);
 app.use(usersRouter);
+app.use(leaderboardRouter);
 app.use(gameRouter);
 app.use(errorHandler);
 

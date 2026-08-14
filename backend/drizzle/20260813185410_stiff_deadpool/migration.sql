@@ -1,0 +1,1 @@
+CREATE INDEX "game_sessions_leaderboard_idx" ON "game_sessions" ("mode_type","status","score","server_ended_at");

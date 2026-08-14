@@ -6,6 +6,7 @@ import {
   timestamp,
   text,
   pgEnum,
+  index,
 } from 'drizzle-orm/pg-core';
 
 export const userRoleEnum = pgEnum('user_role', ['user', 'admin']);
@@ -60,6 +61,10 @@ export const gameSessions = pgTable('game_sessions', {
   elapsedMs: integer('elapsed_ms'),
   score: integer('score'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => {
+  return {
+    leaderboardIdx: index('game_sessions_leaderboard_idx').on(table.modeType, table.status, table.score, table.serverEndedAt),
+  };
 });
 
 
