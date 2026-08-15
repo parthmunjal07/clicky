@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { gameApi, type GameMode } from '../lib/game-api';
+import { useAuthStore } from './auth-store';
 
 export type GameStatus = 'idle' | 'countdown' | 'active' | 'completed' | 'error';
 
@@ -140,6 +141,8 @@ export const useGameStore = create<GameState>((set, get) => ({
           if (res.finalized) {
             updates.status = 'completed';
             updates.serverScore = res.score ?? null;
+            // Update user profile to sync highest CPS
+            useAuthStore.getState().hydrate();
           }
           return updates;
         });
@@ -162,6 +165,8 @@ export const useGameStore = create<GameState>((set, get) => ({
           serverScore: res.score,
           rank: res.rank ?? null,
         });
+        // Update user profile to sync highest CPS
+        useAuthStore.getState().hydrate();
       } catch (err) {
         set({ status: 'error' });
       }

@@ -23,11 +23,10 @@ export async function getUserProfile(userId: string): Promise<UserProfile> {
       totalClicks: sql<number>`cast(sum(${gameSessions.clickCount}) as int)`,
       highestCps: sql<number>`
         max(
-          case 
-            when ${gameSessions.modeType} = 'timer'
-            then cast(${gameSessions.clickCount} as float) / (greatest(coalesce(${gameSessions.elapsedMs}, ${gameSessions.modeValue} * 1000), 1) / 1000.0)
-            else 0 
-          end
+          cast(${gameSessions.clickCount} as float) / (greatest(
+            coalesce(${gameSessions.elapsedMs}, 
+              case when ${gameSessions.modeType} = 'timer' then ${gameSessions.modeValue} * 1000 else 1 end
+            ), 1) / 1000.0)
         )
       `
     })
