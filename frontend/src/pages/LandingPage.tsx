@@ -151,7 +151,7 @@ export function LandingPage({ isAuthenticated }: LandingPageProps) {
             {[
               {
                 mode: 'Timer Mode',
-                desc: 'Race against the clock. How many clicks in 30s, 20s, or 10s?',
+                desc: 'Race against the clock. How many clicks in 60s, 30s, or 10s?',
                 color: 'var(--accent-coral)',
               },
               {

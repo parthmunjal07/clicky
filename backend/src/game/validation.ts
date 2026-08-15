@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 // ─── Allowed Mode Values ────────────────────────────────────────────────────
 
-const TIMER_MODE_VALUES = [30, 20, 10] as const;
+const TIMER_MODE_VALUES = [60, 30, 10] as const;
 const CLICKS_MODE_VALUES = [50, 25, 10] as const;
 
 // ─── Schemas ────────────────────────────────────────────────────────────────
@@ -22,7 +22,7 @@ export const startGameSchema = z
     },
     {
       message:
-        'Invalid mode_value. Timer accepts 30, 20, 10 (seconds). Clicks accepts 50, 25, 10 (target count).',
+        'Invalid mode_value. Timer accepts 60, 30, 10 (seconds). Clicks accepts 50, 25, 10 (target count).',
       path: ['mode_value'],
     },
   );

@@ -28,7 +28,7 @@ export function HomeHub() {
 
   if (!user) return null;
 
-  const timerOptions = [30, 20, 10];
+  const timerOptions = [60, 30, 10];
   const clicksOptions = [50, 25, 10];
 
   const handleModeSelect = (mode: GameMode) => {

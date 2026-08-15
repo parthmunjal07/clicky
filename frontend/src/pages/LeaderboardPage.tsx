@@ -47,7 +47,7 @@ export function LeaderboardPage({ onReturnToDashboard: _onReturnToDashboard }: L
   };
 
   const getValidValue = (mode: Mode, val: number) => {
-    if (mode === 'timer') return [30, 20, 10].includes(val) ? val : 30;
+    if (mode === 'timer') return [60, 30, 10].includes(val) ? val : 30;
     if (mode === 'clicks') return [50, 25, 10].includes(val) ? val : 50;
     return 30;
   };
@@ -129,7 +129,7 @@ export function LeaderboardPage({ onReturnToDashboard: _onReturnToDashboard }: L
               {/* Bottom Row: Sub-values (kept for functionality, styled quietly) */}
               {activeMode !== 'cps' && (
                 <div className="flex gap-2">
-                  {(activeMode === 'timer' ? [30, 20, 10] : [50, 25, 10]).map(val => (
+                  {(activeMode === 'timer' ? [60, 30, 10] : [50, 25, 10]).map(val => (
                     <button
                       key={val}
                       className={`py-1 px-3 rounded-full text-xs font-700 uppercase tracking-widest transition-colors ${
