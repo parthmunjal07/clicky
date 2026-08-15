@@ -10,7 +10,7 @@ export interface LeaderboardEntry {
 }
 
 export type Timeframe = 'global' | 'monthly' | 'weekly' | 'daily';
-export type Mode = 'timer' | 'clicks';
+export type Mode = 'timer' | 'clicks' | 'cps';
 
 export const leaderboardApi = {
   getLeaderboard: (mode: Mode, value: number, timeframe: Timeframe) =>

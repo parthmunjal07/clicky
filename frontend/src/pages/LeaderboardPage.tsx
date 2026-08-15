@@ -93,9 +93,9 @@ export function LeaderboardPage({ onReturnToDashboard: _onReturnToDashboard }: L
             
             {/* Middle Row: Modes */}
             <div className="flex flex-col items-center gap-4">
-              <div className="flex justify-center gap-6 w-full px-8">
+              <div className="flex justify-center gap-2 sm:gap-4 w-full px-2 sm:px-8">
                 <button
-                  className={`flex-1 py-3 px-6 rounded-full text-sm font-700 uppercase tracking-widest border-[2.5px] border-[var(--border)] transition-all ${
+                  className={`flex-1 py-2 sm:py-3 px-2 sm:px-6 rounded-full text-xs sm:text-sm font-700 uppercase tracking-widest border-[2.5px] border-[var(--border)] transition-all ${
                     activeMode === 'timer' 
                       ? 'bg-[var(--accent-coral)] text-white shadow-[4px_4px_0_var(--shadow)] translate-x-[-2px] translate-y-[-2px]' 
                       : 'bg-[var(--surface)] text-[var(--text-muted)] hover:bg-[var(--bg)] shadow-[2px_2px_0_var(--shadow)] translate-x-[1px] translate-y-[1px]'
@@ -105,7 +105,7 @@ export function LeaderboardPage({ onReturnToDashboard: _onReturnToDashboard }: L
                   Timer
                 </button>
                 <button
-                  className={`flex-1 py-3 px-6 rounded-full text-sm font-700 uppercase tracking-widest border-[2.5px] border-[var(--border)] transition-all ${
+                  className={`flex-1 py-2 sm:py-3 px-2 sm:px-6 rounded-full text-xs sm:text-sm font-700 uppercase tracking-widest border-[2.5px] border-[var(--border)] transition-all ${
                     activeMode === 'clicks' 
                       ? 'bg-[var(--accent-blue)] text-white shadow-[4px_4px_0_var(--shadow)] translate-x-[-2px] translate-y-[-2px]' 
                       : 'bg-[var(--surface)] text-[var(--text-muted)] hover:bg-[var(--bg)] shadow-[2px_2px_0_var(--shadow)] translate-x-[1px] translate-y-[1px]'
@@ -114,22 +114,34 @@ export function LeaderboardPage({ onReturnToDashboard: _onReturnToDashboard }: L
                 >
                   Clicks
                 </button>
+                <button
+                  className={`flex-1 py-2 sm:py-3 px-2 sm:px-6 rounded-full text-xs sm:text-sm font-700 uppercase tracking-widest border-[2.5px] border-[var(--border)] transition-all ${
+                    activeMode === 'cps' 
+                      ? 'bg-[var(--accent-teal)] text-[var(--text-primary)] shadow-[4px_4px_0_var(--shadow)] translate-x-[-2px] translate-y-[-2px]' 
+                      : 'bg-[var(--surface)] text-[var(--text-muted)] hover:bg-[var(--bg)] shadow-[2px_2px_0_var(--shadow)] translate-x-[1px] translate-y-[1px]'
+                  }`}
+                  onClick={() => setFilter({ mode: 'cps', value: '0' })}
+                >
+                  Max CPS
+                </button>
               </div>
 
               {/* Bottom Row: Sub-values (kept for functionality, styled quietly) */}
-              <div className="flex gap-2">
-                {(activeMode === 'timer' ? [30, 20, 10] : [50, 25, 10]).map(val => (
-                  <button
-                    key={val}
-                    className={`py-1 px-3 rounded-full text-xs font-700 uppercase tracking-widest transition-colors ${
-                      activeValue === val ? 'bg-[var(--accent-teal)] text-[var(--text-primary)] border-[1.5px] border-[var(--border)]' : 'text-[var(--text-muted)] hover:bg-[rgba(26,26,26,0.05)] border-[1.5px] border-transparent'
-                    }`}
-                    onClick={() => setFilter({ value: String(val) })}
-                  >
-                    {val}{activeMode === 'timer' ? 's' : ''}
-                  </button>
-                ))}
-              </div>
+              {activeMode !== 'cps' && (
+                <div className="flex gap-2">
+                  {(activeMode === 'timer' ? [30, 20, 10] : [50, 25, 10]).map(val => (
+                    <button
+                      key={val}
+                      className={`py-1 px-3 rounded-full text-xs font-700 uppercase tracking-widest transition-colors ${
+                        activeValue === val ? 'bg-[var(--accent-teal)] text-[var(--text-primary)] border-[1.5px] border-[var(--border)]' : 'text-[var(--text-muted)] hover:bg-[rgba(26,26,26,0.05)] border-[1.5px] border-transparent'
+                      }`}
+                      onClick={() => setFilter({ value: String(val) })}
+                    >
+                      {val}{activeMode === 'timer' ? 's' : ''}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="flex flex-col gap-3">
@@ -186,7 +198,9 @@ export function LeaderboardPage({ onReturnToDashboard: _onReturnToDashboard }: L
                             </div>
                           </div>
                           <div className="text-right pl-4">
-                            <span className="nbr-mono text-2xl" style={{ color: 'var(--text-primary)' }}>{activeMode === 'timer' ? item.score : `${(item.score / 1000).toFixed(2)}s`}</span>
+                            <span className="nbr-mono text-2xl" style={{ color: 'var(--text-primary)' }}>
+                              {activeMode === 'cps' ? item.score.toFixed(2) : activeMode === 'timer' ? item.score : `${(item.score / 1000).toFixed(2)}s`}
+                            </span>
                           </div>
                         </motion.div>
                       );
@@ -196,7 +210,9 @@ export function LeaderboardPage({ onReturnToDashboard: _onReturnToDashboard }: L
                   {!isLoading && scores.length > 0 && user && !scores.some(s => s.id === user.id) && (
                     <div className="text-center mt-4">
                       <span className="text-xs font-700 uppercase tracking-widest text-[var(--text-muted)]">
-                        You haven't played {activeMode.charAt(0).toUpperCase() + activeMode.slice(1)} ({activeMode === 'timer' ? `${activeValue}s` : activeValue}) yet.
+                        {activeMode === 'cps' 
+                          ? "You haven't played any games yet."
+                          : `You haven't played ${activeMode.charAt(0).toUpperCase() + activeMode.slice(1)} (${activeMode === 'timer' ? `${activeValue}s` : activeValue}) yet.`}
                       </span>
                     </div>
                   )}

@@ -6,7 +6,7 @@ import { z } from 'zod';
 const router = Router();
 
 const querySchema = z.object({
-  mode: z.enum(['timer', 'clicks']).default('timer'),
+  mode: z.enum(['timer', 'clicks', 'cps']).default('timer'),
   value: z.coerce.number().default(30),
 });
 

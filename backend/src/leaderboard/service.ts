@@ -13,7 +13,7 @@ export interface LeaderboardEntry {
 }
 
 export type Timeframe = 'global' | 'monthly' | 'weekly' | 'daily';
-export type Mode = 'timer' | 'clicks';
+export type Mode = 'timer' | 'clicks' | 'cps';
 
 export async function getLeaderboard(mode: Mode, value: number, timeframe: Timeframe): Promise<LeaderboardEntry[]> {
   const cacheKey = `leaderboard:${mode}:${value}:${timeframe}`;
@@ -37,44 +37,66 @@ export async function getLeaderboard(mode: Mode, value: number, timeframe: Timef
   // Define the where clause
   let conditions = [
     eq(gameSessions.status, 'completed'),
-    eq(gameSessions.modeType, mode),
-    eq(gameSessions.modeValue, value),
   ];
+  if (mode !== 'cps') {
+    conditions.push(eq(gameSessions.modeType, mode));
+    conditions.push(eq(gameSessions.modeValue, value));
+  }
   
   if (startDate) {
     conditions.push(gte(gameSessions.serverEndedAt, startDate));
   }
 
-  // Order by score: desc for timer, asc for clicks
-  const scoreOrder = mode === 'timer' ? desc(gameSessions.score) : asc(gameSessions.score);
+  // Order by score: desc for timer, asc for clicks, desc for cps
+  const scoreOrder = mode === 'clicks' ? asc(gameSessions.score) : desc(gameSessions.score);
 
   // Drizzle doesn't have native `DISTINCT ON` support easily accessible without dropping into raw SQL, 
   // but for our MVP, we can pull the top N sessions and deduplicate in memory, 
   // OR we can write a raw query. Since we want top 100 *users*, a raw query is safest.
   
-  const rawQuery = db.execute(
-    mode === 'timer'
-      ? `
-        SELECT u.id, u.username, u.display_name as "displayName", u.avatar_url as "avatarUrl", MAX(s.score) as score
-        FROM game_sessions s
-        JOIN users u ON s.user_id = u.id
-        WHERE s.status = 'completed' AND s.mode_type = 'timer' AND s.mode_value = ${value}
-        ${startDate ? `AND s.server_ended_at >= '${startDate.toISOString()}'` : ''}
-        GROUP BY u.id, u.username, u.display_name, u.avatar_url
-        ORDER BY score DESC
-        LIMIT 100;
-      `
-      : `
-        SELECT u.id, u.username, u.display_name as "displayName", u.avatar_url as "avatarUrl", MIN(s.score) as score
-        FROM game_sessions s
-        JOIN users u ON s.user_id = u.id
-        WHERE s.status = 'completed' AND s.mode_type = 'clicks' AND s.mode_value = ${value}
-        ${startDate ? `AND s.server_ended_at >= '${startDate.toISOString()}'` : ''}
-        GROUP BY u.id, u.username, u.display_name, u.avatar_url
-        ORDER BY score ASC
-        LIMIT 100;
-      `
-  );
+  let rawQuery;
+  if (mode === 'cps') {
+    rawQuery = db.execute(`
+      SELECT u.id, u.username, u.display_name as "displayName", u.avatar_url as "avatarUrl", 
+        MAX(
+          cast(s.click_count as float) / (greatest(
+            coalesce(s.elapsed_ms, 
+              case when s.mode_type = 'timer' then s.mode_value * 1000 else 1 end
+            ), 1) / 1000.0)
+        ) as score
+      FROM game_sessions s
+      JOIN users u ON s.user_id = u.id
+      WHERE s.status = 'completed'
+      ${startDate ? `AND s.server_ended_at >= '${startDate.toISOString()}'` : ''}
+      GROUP BY u.id, u.username, u.display_name, u.avatar_url
+      ORDER BY score DESC
+      LIMIT 100;
+    `);
+  } else {
+    rawQuery = db.execute(
+      mode === 'timer'
+        ? `
+          SELECT u.id, u.username, u.display_name as "displayName", u.avatar_url as "avatarUrl", MAX(s.score) as score
+          FROM game_sessions s
+          JOIN users u ON s.user_id = u.id
+          WHERE s.status = 'completed' AND s.mode_type = 'timer' AND s.mode_value = ${value}
+          ${startDate ? `AND s.server_ended_at >= '${startDate.toISOString()}'` : ''}
+          GROUP BY u.id, u.username, u.display_name, u.avatar_url
+          ORDER BY score DESC
+          LIMIT 100;
+        `
+        : `
+          SELECT u.id, u.username, u.display_name as "displayName", u.avatar_url as "avatarUrl", MIN(s.score) as score
+          FROM game_sessions s
+          JOIN users u ON s.user_id = u.id
+          WHERE s.status = 'completed' AND s.mode_type = 'clicks' AND s.mode_value = ${value}
+          ${startDate ? `AND s.server_ended_at >= '${startDate.toISOString()}'` : ''}
+          GROUP BY u.id, u.username, u.display_name, u.avatar_url
+          ORDER BY score ASC
+          LIMIT 100;
+        `
+    );
+  }
 
   const result = await rawQuery;
 
