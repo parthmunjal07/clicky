@@ -72,10 +72,16 @@ export function LandingPage({ isAuthenticated }: LandingPageProps) {
             transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
             className="flex flex-col items-center gap-6 text-center"
           >
-            <h1 className="nbr-display-heavy text-5xl sm:text-6xl uppercase leading-tight text-[var(--text-primary)]">
+            <h1 
+              className="nbr-display-heavy text-5xl sm:text-6xl uppercase leading-tight text-[var(--text-primary)]"
+              style={{ textWrap: 'balance' }}
+            >
               How fast can you click?
             </h1>
-            <p className="text-lg sm:text-xl text-[var(--text-muted)] max-w-[500px]">
+            <p 
+              className="text-lg sm:text-xl text-[var(--text-muted)] max-w-[550px]"
+              style={{ textWrap: 'balance' }}
+            >
               Challenge yourself. Compete globally. Dominate the leaderboard.
             </p>
             <button
