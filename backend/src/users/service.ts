@@ -24,8 +24,8 @@ export async function getUserProfile(userId: string): Promise<UserProfile> {
       highestCps: sql<number>`
         max(
           case 
-            when ${gameSessions.modeType} = 'timer' and ${gameSessions.elapsedMs} > 0 
-            then cast(${gameSessions.clickCount} as float) / (${gameSessions.elapsedMs} / 1000.0)
+            when ${gameSessions.modeType} = 'timer'
+            then cast(${gameSessions.clickCount} as float) / (greatest(coalesce(${gameSessions.elapsedMs}, ${gameSessions.modeValue} * 1000), 1) / 1000.0)
             else 0 
           end
         )

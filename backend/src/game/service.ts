@@ -8,6 +8,9 @@ import { validateGamePhysics } from './validation.js';
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
+/** Countdown duration before clicks are accepted (ms) */
+const COUNTDOWN_DURATION_MS = 3000;
+
 /** Grace period for accepting clicks after timer expires (network jitter) */
 const CLICK_GRACE_MS = 300;
 
@@ -85,6 +88,9 @@ export async function startSession(
 
   // ── Create DB row ──
   const now = new Date();
+  // Adjust serverStartedAt to account for the 3-second countdown phase
+  // This ensures timer mode shows the correct remaining time after countdown completes
+  const serverStartedAt = new Date(now.getTime() + COUNTDOWN_DURATION_MS);
 
   const [session] = await db
     .insert(gameSessions)
@@ -93,7 +99,7 @@ export async function startSession(
       modeType,
       modeValue,
       status: 'active',
-      serverStartedAt: now,
+      serverStartedAt,
     })
     .returning({
       id: gameSessions.id,
@@ -102,13 +108,14 @@ export async function startSession(
 
   // ── Initialize hot store ──
   const nowMs = now.getTime();
+  const serverStartedAtMs = serverStartedAt.getTime();
 
   hotStore.create(session!.id, {
     userId,
     clicks: 0,
     modeType,
     modeValue,
-    serverStartedAt: nowMs,
+    serverStartedAt: serverStartedAtMs,
     lastClickAt: nowMs,
     recentClickTimestamps: [],
     lastSeqNum: -1,

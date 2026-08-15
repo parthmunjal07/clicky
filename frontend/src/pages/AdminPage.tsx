@@ -163,14 +163,14 @@ export function AdminPage() {
             <input 
               type="text" 
               placeholder="Search by username or email..." 
-              className="nbr-input py-3 w-full"
+              className="w-full bg-[rgba(26,26,26,0.02)] border-[1.5px] border-[rgba(26,26,26,0.2)] rounded-[12px] px-4 py-3 text-sm focus:outline-none focus:bg-[var(--surface)] focus:border-[var(--border)] transition-colors"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
 
-          <div className="nbr-card flex flex-col p-4 gap-2">
-            <div className="flex items-center justify-between px-4 py-2 border-b-2 border-dashed border-[var(--border)] opacity-60">
+          <div className="nbr-card-quiet flex flex-col p-4 gap-2">
+            <div className="flex items-center justify-between px-4 py-2 border-b-2 border-dashed border-[rgba(26,26,26,0.1)]">
               <span className="text-xs font-700 uppercase tracking-widest w-1/3">User</span>
               <span className="text-xs font-700 uppercase tracking-widest w-1/3 text-center">Joined</span>
               <span className="text-xs font-700 uppercase tracking-widest w-1/3 text-right">Role</span>
@@ -196,12 +196,12 @@ export function AdminPage() {
                 <span className="text-sm font-700 text-[var(--text-muted)] uppercase tracking-widest">No users found</span>
               </div>
             ) : (
-              <div className="flex flex-col gap-2 mt-2">
+              <div className="flex flex-col overflow-hidden">
                 {users.map((user: AdminUser) => (
                   <div
                     key={user.id}
                     onClick={() => setSelectedUser(user)}
-                    className="nbr-lb-row flex items-center justify-between px-4 py-4 w-full cursor-pointer hover:bg-[var(--accent-yellow)] transition-colors"
+                    className="nbr-row cursor-pointer hover:bg-[rgba(26,26,26,0.02)] w-full"
                   >
                     <div className="w-1/3 flex flex-col overflow-hidden">
                       <span className="text-sm font-700 truncate pr-2">{user.username}</span>

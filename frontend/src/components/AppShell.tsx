@@ -16,12 +16,12 @@ export function AppShell() {
     navigate('/login');
   }
 
-  const navLinkClass = ({ isActive }: { isActive: boolean }) => {
-    const base = "flex items-center gap-2 px-6 py-3 border-[2.5px] border-[var(--border)] rounded-full font-700 transition-all text-sm uppercase tracking-widest";
-    if (isActive) {
-      return `${base} bg-[var(--accent-yellow)] translate-x-[3px] translate-y-[3px] shadow-none`;
-    }
-    return `${base} bg-[var(--surface)] shadow-[3px_3px_0_var(--shadow)] hover:bg-[var(--bg)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[4px_4px_0_var(--shadow)]`;
+  const desktopNavLinkClass = ({ isActive }: { isActive: boolean }) => {
+    return `text-sm font-700 uppercase tracking-widest transition-colors ${
+      isActive 
+        ? 'text-[var(--text-primary)] underline decoration-[2.5px] underline-offset-4' 
+        : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+    }`;
   };
 
   const mobileNavLinkClass = ({ isActive }: { isActive: boolean }) => {
@@ -33,37 +33,43 @@ export function AppShell() {
   };
 
   return (
-    <div className="flex flex-col min-h-[100dvh]">
+    <div className="flex flex-col min-h-dvh">
       {/* Desktop Top Bar */}
-      <header className="hidden md:flex items-center justify-between px-12 py-6 z-40 relative">
-        <NavLink to="/home" className="flex items-center gap-4 group">
-          <div className="flex items-center justify-center w-12 h-12 bg-[var(--accent-coral)] rounded-[12px] border-[2.5px] border-[var(--border)] shadow-[3px_3px_0_var(--shadow)] group-hover:translate-x-[1px] group-hover:translate-y-[1px] group-hover:shadow-[2px_2px_0_var(--shadow)] transition-all">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M8 3v8.5L10.5 9l2 4.5 1.5-.5-2-4.5L15 9V3H8Z" fill="#ffffff" stroke="#ffffff" strokeWidth="0.5" strokeLinejoin="round" />
-            </svg>
-          </div>
-          <span className="nbr-display text-2xl tracking-tighter">Clicky</span>
-        </NavLink>
+      <header className="hidden md:flex justify-center px-6 sm:px-12 py-8 z-40 sticky top-0 bg-[var(--bg)]">
+        <div className="flex items-center justify-between w-full px-8 py-2 border-[2.5px] border-[var(--border)] rounded-full bg-[var(--surface)] shadow-[4px_4px_0_var(--shadow)]">
+          {/* Left: Logo */}
+          <NavLink to="/home" className="flex items-center gap-3 group">
+            <span className="nbr-display text-2xl tracking-tighter">Clicky</span>
+          </NavLink>
 
-        <nav className="flex items-center gap-6">
-          <NavLink to="/leaderboard" className={navLinkClass}>
-            Leaderboard
-          </NavLink>
-          <NavLink to="/profile" className={navLinkClass}>
-            Profile
-          </NavLink>
-          {user?.role === 'admin' && (
-            <NavLink to="/admin" className={navLinkClass}>
-              Admin
+          {/* Center: Main Nav */}
+          <nav className="flex items-center gap-12">
+            <NavLink to="/home" className={desktopNavLinkClass}>
+              Home
             </NavLink>
-          )}
-          <button 
-            onClick={handleLogout} 
-            className="ml-6 text-sm font-700 uppercase tracking-widest nbr-link text-[var(--text-muted)]"
-          >
-            Logout
-          </button>
-        </nav>
+            <NavLink to="/leaderboard" className={desktopNavLinkClass}>
+              Leaderboard
+            </NavLink>
+            {user?.role === 'admin' && (
+              <NavLink to="/admin" className={desktopNavLinkClass}>
+                Admin
+              </NavLink>
+            )}
+          </nav>
+
+          {/* Right: User / Logout */}
+          <div className="flex items-center gap-8">
+            <NavLink to="/profile" className={desktopNavLinkClass}>
+              Profile
+            </NavLink>
+            <button 
+              onClick={handleLogout} 
+              className="text-sm font-700 uppercase tracking-widest text-[var(--text-muted)] hover:text-[var(--accent-coral)] transition-colors"
+            >
+              Logout
+            </button>
+          </div>
+        </div>
       </header>
 
       {/* Main Content Area */}

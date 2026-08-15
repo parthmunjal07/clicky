@@ -115,7 +115,17 @@ export function GamePage({ onReturnToDashboard }: GamePageProps) {
     }
   }
 
-  function handlePlayAgain() {
+  async function handlePlayAgain() {
+    try {
+      const newSessionId = await store.actions.startGame(store.modeType!, store.modeValue!);
+      navigate(`/game/${newSessionId}`, { replace: true });
+    } catch (e) {
+      console.error(e);
+      navigate('/home');
+    }
+  }
+
+  function handleChangeMode() {
     navigate('/home');
   }
 
@@ -141,16 +151,23 @@ export function GamePage({ onReturnToDashboard }: GamePageProps) {
   }
 
   if (store.status === 'idle') {
-    return null; // or loading spinner
+    return (
+      <div className="min-h-[100dvh] flex flex-col items-center justify-center p-6 nbr-dot-grid bg-[var(--bg)]">
+        <div className="flex flex-col items-center justify-center gap-6">
+          <div className="nbr-spinner-dark" style={{ width: '3rem', height: '3rem', borderWidth: '5px' }} />
+          <p className="text-sm font-700 uppercase tracking-widest text-[var(--text-muted)]">Loading Game...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="min-h-[100dvh] relative" style={{ backgroundColor: 'var(--bg)' }}>
-      <div className="relative z-10 flex flex-col items-center justify-center min-h-[100dvh] px-6 sm:px-12 overflow-hidden w-full mx-auto">
+      <div className="relative z-10 flex flex-col items-center justify-center min-h-[100dvh] px-4 sm:px-6 pb-24 md:pb-12 overflow-hidden w-full mx-auto">
         
         {/* Top: Timer Badge */}
         <div
-          className="absolute top-12 left-1/2 -translate-x-1/2 flex items-center justify-center px-4 py-2"
+          className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center justify-center px-4 py-2"
           style={{
             background: isUrgent ? 'var(--accent-coral)' : 'var(--surface)',
             border: '3px solid var(--border)',
@@ -204,7 +221,7 @@ export function GamePage({ onReturnToDashboard }: GamePageProps) {
 
         {/* Bottom: Live Click Count Badge */}
         <div
-          className="absolute bottom-16 left-1/2 -translate-x-1/2 flex items-center justify-center px-6 py-2"
+          className="absolute bottom-24 md:bottom-16 left-1/2 -translate-x-1/2 flex items-center justify-center px-6 py-2"
           style={{
             background: 'var(--surface)',
             border: '3px solid var(--border)',
@@ -229,6 +246,7 @@ export function GamePage({ onReturnToDashboard }: GamePageProps) {
               isTimerMode={isTimerMode} 
               onReturnToDashboard={onReturnToDashboard} 
               onPlayAgain={handlePlayAgain}
+              onChangeMode={handleChangeMode}
             />
           ) : null}
         </AnimatePresence>
@@ -239,7 +257,7 @@ export function GamePage({ onReturnToDashboard }: GamePageProps) {
 }
 
 // Separate component for Results Modal to handle animations cleanly
-function ResultsModal({ store, isTimerMode, onReturnToDashboard, onPlayAgain }: any) {
+function ResultsModal({ store, isTimerMode, onReturnToDashboard, onPlayAgain, onChangeMode }: any) {
   // Reconciliation animation for score
   const count = useMotionValue(store.optimisticClicks);
   const [displayScore, setDisplayScore] = useState(store.optimisticClicks);
@@ -324,21 +342,27 @@ function ResultsModal({ store, isTimerMode, onReturnToDashboard, onPlayAgain }: 
                 </div>
               )}
 
-              <div className="flex flex-col w-full gap-3 mt-4">
+              <div className="flex flex-col items-center w-full gap-4 mt-6">
                 <button
-                  className="nbr-btn w-full flex items-center justify-center"
-                  style={{ paddingTop: '1rem', paddingBottom: '1rem' }}
-                  onClick={onReturnToDashboard}
-                >
-                  View Leaderboard
-                </button>
-                <button
-                  className="nbr-btn-ghost w-full flex items-center justify-center"
-                  style={{ paddingTop: '1rem', paddingBottom: '1rem' }}
+                  className="nbr-btn w-full flex items-center justify-center py-4"
                   onClick={onPlayAgain}
                 >
-                  Change Mode
+                  PLAY AGAIN
                 </button>
+                <div className="flex items-center gap-6 mt-2">
+                  <button
+                    className="nbr-link text-xs uppercase tracking-widest"
+                    onClick={onChangeMode}
+                  >
+                    Change Mode
+                  </button>
+                  <button
+                    className="nbr-link text-xs uppercase tracking-widest"
+                    onClick={onReturnToDashboard}
+                  >
+                    Leaderboard
+                  </button>
+                </div>
               </div>
             </>
           )}

@@ -36,11 +36,6 @@
 
 /* ─── Base ────────────────────────────────────────────────────────────────── */
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
 
 html {
   color-scheme: light;
@@ -79,6 +74,34 @@ body {
   border: 2px solid var(--border);
   border-radius: calc(var(--radius) - 4px);
   box-shadow: 2px 2px 0 var(--shadow);
+}
+
+.nbr-card-quiet {
+  background: var(--surface);
+  border: 1.5px solid rgba(26, 26, 26, 0.2);
+  border-radius: var(--radius);
+  box-shadow: none;
+}
+
+/* ─── Row (Quiet List Item) ─────────────────────────────────────────────── */
+
+.nbr-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  background: transparent;
+  border-bottom: 2px solid rgba(26, 26, 26, 0.1);
+  box-shadow: none;
+  transition: background-color 0.2s;
+}
+
+.nbr-row:hover {
+  background: rgba(26, 26, 26, 0.02);
+}
+
+.nbr-row:last-child {
+  border-bottom: none;
 }
 
 /* ─── Primary Button (Coral) ─────────────────────────────────────────────── */
@@ -415,43 +438,39 @@ body {
 /* ─── Mode Selection Classes ─────────────────────────────────────────────── */
 
 .nbr-mode-card {
-  background: var(--surface);
-  border: var(--border-width) solid var(--border);
+  background: transparent;
+  border: 1.5px solid rgba(26, 26, 26, 0.2);
   border-radius: 20px;
   cursor: pointer;
-  box-shadow: var(--shadow-offset) var(--shadow-offset) 0 var(--shadow);
+  box-shadow: none;
   transform: translate(0, 0);
-  transition:
-    background-color 80ms ease,
-    box-shadow 80ms ease,
-    transform 80ms ease;
+  transition: all 120ms ease;
 }
 
 .nbr-mode-card-active {
   background: var(--accent-yellow);
-  box-shadow: 0 0 0 var(--shadow);
-  transform: translate(var(--shadow-offset), var(--shadow-offset));
+  border: var(--border-width) solid var(--border);
+  box-shadow: var(--shadow-offset) var(--shadow-offset) 0 var(--shadow);
+  transform: translate(-2px, -2px);
 }
 
 .nbr-pill {
-  background: var(--surface);
-  border: var(--border-width) solid var(--border);
+  background: transparent;
+  border: 1.5px solid rgba(26, 26, 26, 0.2);
   border-radius: 999px;
   cursor: pointer;
   font-family: var(--font-mono);
   font-weight: 700;
-  box-shadow: 3px 3px 0 var(--shadow);
+  box-shadow: none;
   transform: translate(0, 0);
-  transition:
-    background-color 80ms ease,
-    box-shadow 80ms ease,
-    transform 80ms ease;
+  transition: all 120ms ease;
 }
 
 .nbr-pill-active {
   background: var(--accent-teal);
-  box-shadow: 0 0 0 var(--shadow);
-  transform: translate(3px, 3px);
+  border: var(--border-width) solid var(--border);
+  box-shadow: 3px 3px 0 var(--shadow);
+  transform: translate(-1px, -1px);
 }
 
 /* ─── Segmented Control ──────────────────────────────────────────────────── */

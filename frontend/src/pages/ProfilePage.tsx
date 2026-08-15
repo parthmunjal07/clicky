@@ -19,10 +19,17 @@ export function ProfilePage() {
 
   const sessionHistory = user.recentSessions || [];
   
-  // Create chart data from recent sessions (reverse for chronological order left-to-right)
+  // Create chart data from recent sessions — score may be number (timer: clickCount) 
+  // or a string like "2.50s" (clicks mode: time display). We extract the numeric value for charting.
   const chartData = sessionHistory
-    .filter(s => typeof s.score === 'number' || !isNaN(Number(s.score)))
-    .map(s => Number(s.score))
+    .map(s => {
+      const raw = s.score;
+      if (typeof raw === 'number') return raw;
+      // strip trailing 's' for clicks mode time strings
+      const n = parseFloat(String(raw));
+      return isNaN(n) ? null : n;
+    })
+    .filter((v): v is number => v !== null)
     .reverse();
     
   if (chartData.length === 0) {
@@ -42,6 +49,7 @@ export function ProfilePage() {
     return { x, y, val };
   });
   const polylinePoints = points.map(p => `${p.x},${p.y}`).join(' ');
+  const hasRealData = sessionHistory.length > 0 && chartData.length > 1;
 
   async function handleSaveProfile() {
     setIsSaving(true);
@@ -82,7 +90,7 @@ export function ProfilePage() {
           {/* Header */}
           <div className="flex flex-col gap-4 text-center items-center">
             <div className="relative">
-              <div className="flex items-center justify-center overflow-hidden bg-[var(--surface)] border-[2.5px] border-[var(--border)] rounded-[24px] w-32 h-32 shadow-[4px_4px_0_var(--shadow)] mb-4">
+              <div className="flex items-center justify-center overflow-hidden bg-white border-[2.5px] border-[var(--border)] rounded-full w-32 h-32 mb-4">
                 {user.avatarUrl ? (
                   <img src={user.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
                 ) : (
@@ -93,7 +101,8 @@ export function ProfilePage() {
               </div>
               <button 
                 onClick={() => setIsEditing(!isEditing)}
-                className="absolute bottom-4 -right-2 bg-[var(--accent-yellow)] border-[2.5px] border-[var(--border)] rounded-full p-2 shadow-[2px_2px_0_var(--shadow)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0_var(--shadow)] transition-all"
+                className="absolute bottom-4 -right-2 bg-white border-[2.5px] border-[var(--border)] rounded-full p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg)] transition-colors"
+                title="Edit Profile"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -151,64 +160,72 @@ export function ProfilePage() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="flex flex-col items-center"
+                  className="flex flex-col items-center gap-1"
                 >
                   <h1 className="nbr-display-heavy text-4xl sm:text-5xl uppercase truncate max-w-full">
                     {nameDisplay}
                   </h1>
-                  <p className="text-sm font-700 uppercase tracking-widest text-[var(--text-muted)]">
-                    @{user.username}
-                  </p>
+                  {user.displayName && (
+                    <p className="text-sm font-700 uppercase tracking-widest text-[var(--text-muted)]">
+                      @{user.username}
+                    </p>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
 
-          {/* Lifetime Stats */}
-          <div className="grid grid-cols-3 gap-4 w-full">
-            <div className="nbr-card flex flex-col items-center justify-center py-6 gap-2">
-              <span className="nbr-display-heavy text-3xl text-[var(--accent-coral)]">{user.stats?.totalGamesPlayed || 0}</span>
+          {/* Lifetime Stats Consolidated */}
+          <div className="nbr-card-quiet flex items-center justify-between py-6">
+            <div className="flex-1 flex flex-col items-center gap-1 border-r-[1.5px] border-[rgba(26,26,26,0.1)]">
+              <span className="nbr-display-heavy text-2xl text-[var(--accent-coral)]">{user.stats?.totalGamesPlayed || 0}</span>
               <span className="text-[0.65rem] font-700 uppercase tracking-widest text-[var(--text-muted)] text-center">Games<br/>Played</span>
             </div>
-            <div className="nbr-card flex flex-col items-center justify-center py-6 gap-2">
-              <span className="nbr-display-heavy text-3xl text-[var(--accent-blue)]">{user.stats?.highestCps || 0}</span>
+            <div className="flex-1 flex flex-col items-center gap-1 border-r-[1.5px] border-[rgba(26,26,26,0.1)]">
+              <span className="nbr-display-heavy text-2xl text-[var(--accent-blue)]">{user.stats?.highestCps || 0}</span>
               <span className="text-[0.65rem] font-700 uppercase tracking-widest text-[var(--text-muted)] text-center">Highest<br/>CPS</span>
             </div>
-            <div className="nbr-card flex flex-col items-center justify-center py-6 gap-2">
-              <span className="nbr-display-heavy text-3xl text-[var(--accent-yellow)]">{user.stats?.totalClicks || 0}</span>
+            <div className="flex-1 flex flex-col items-center gap-1">
+              <span className="nbr-display-heavy text-2xl text-[var(--text-primary)]">{user.stats?.totalClicks || 0}</span>
               <span className="text-[0.65rem] font-700 uppercase tracking-widest text-[var(--text-muted)] text-center">Total<br/>Clicks</span>
             </div>
           </div>
 
           <div className="nbr-card p-6">
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-4">
               <p className="text-sm font-700 uppercase tracking-widest text-[var(--text-muted)]">
                 Score Trend (Recent)
               </p>
-              <div className="w-full h-32 relative">
-                <svg width="100%" height="100%" viewBox={`0 0 ${chartWidth} ${chartHeight}`} preserveAspectRatio="none" style={{ overflow: 'visible' }}>
-                  <polyline
-                    points={polylinePoints}
-                    fill="none"
-                    stroke="var(--border)"
-                    strokeWidth="2.5"
-                    vectorEffect="non-scaling-stroke"
-                  />
-                  {points.map((p, i) => (
-                    <rect
-                      key={i}
-                      x={p.x - 4}
-                      y={p.y - 4}
-                      width="8"
-                      height="8"
-                      fill="var(--surface)"
+              {!hasRealData ? (
+                <div className="h-24 flex items-center justify-center">
+                  <span className="text-xs font-700 uppercase tracking-widest text-[var(--text-muted)] opacity-60">Play more games to see your trend</span>
+                </div>
+              ) : (
+                <div className="w-full h-32 relative overflow-hidden">
+                  <svg width="100%" height="100%" viewBox={`0 0 ${chartWidth} ${chartHeight}`} preserveAspectRatio="none">
+                    <polyline
+                      points={polylinePoints}
+                      fill="none"
                       stroke="var(--border)"
                       strokeWidth="2.5"
                       vectorEffect="non-scaling-stroke"
                     />
-                  ))}
-                </svg>
-              </div>
+                    {points.map((p, i) => (
+                      <rect
+                        key={i}
+                        x={Math.max(2, p.x - 4)}
+                        y={Math.min(chartHeight - 6, Math.max(2, p.y - 4))}
+                        width="8"
+                        height="8"
+                        fill="var(--surface)"
+                        stroke="var(--border)"
+                        strokeWidth="2.5"
+                        vectorEffect="non-scaling-stroke"
+                      />
+                    ))}
+                  </svg>
+                </div>
+              )}
             </div>
           </div>
 
@@ -216,16 +233,16 @@ export function ProfilePage() {
             <h2 className="text-sm font-700 uppercase tracking-widest px-1 text-[var(--text-muted)]">
               Session History
             </h2>
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col nbr-card-quiet overflow-hidden">
               {sessionHistory.length === 0 ? (
-                <div className="p-8 text-center border-[2.5px] border-[var(--border)] border-dashed rounded-[16px] bg-[var(--surface)]">
+                <div className="p-8 text-center bg-[var(--surface)]">
                   <p className="text-sm font-700 text-[var(--text-muted)]">No sessions yet. Play your first round!</p>
                 </div>
               ) : (
                 sessionHistory.map((session) => (
                   <div
                     key={session.id}
-                    className="nbr-card-sm flex items-center justify-between p-4"
+                    className="nbr-row"
                   >
                     <div className="flex items-center gap-4">
                       <span className="text-sm font-700 text-[var(--text-primary)]">
@@ -238,9 +255,6 @@ export function ProfilePage() {
                     <div className="flex items-center gap-6">
                       <span className="nbr-mono text-xl text-[var(--text-primary)]">
                         {session.score}
-                      </span>
-                      <span className="text-xs font-700 uppercase text-[var(--text-muted)]">
-                        Rank {session.rank}
                       </span>
                     </div>
                   </div>

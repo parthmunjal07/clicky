@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/auth-store';
 import { useGameStore } from '../store/game-store';
+import { showToast } from '../store/toast-store';
 
 export type GameMode = 'timer' | 'clicks';
 export interface GameConfig {
@@ -12,7 +13,7 @@ export interface GameConfig {
 
 export function HomeHub() {
   const { user } = useAuthStore();
-  const { actions: { startGame } } = useGameStore();
+  const store = useGameStore();
   const navigate = useNavigate();
 
   const [selectedMode, setSelectedMode] = useState<GameMode | null>(null);
@@ -26,11 +27,6 @@ export function HomeHub() {
   }, []);
 
   if (!user) return null;
-
-  // --- MOCK DATA ---
-  const personalBest = 142; 
-  const hasHeldNumberOneRank = true;
-  // -----------------
 
   const timerOptions = [30, 20, 10];
   const clicksOptions = [50, 25, 10];
@@ -49,10 +45,12 @@ export function HomeHub() {
     } else if (isReady) {
       setIsLoading(true);
       try {
-        const sessionId = await startGame(selectedMode, selectedValue);
+        const sessionId = await store.actions.startGame(selectedMode!, selectedValue!);
         navigate(`/game/${sessionId}`);
       } catch (err) {
         console.error('Failed to start game:', err);
+        const errorMessage = err instanceof Error ? err.message : 'Failed to start game. Please try again.';
+        showToast(errorMessage);
         setIsLoading(false);
       }
     }
@@ -67,31 +65,18 @@ export function HomeHub() {
           transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
           className="w-full max-w-[480px] flex flex-col gap-12"
         >
-          {/* Top Card - Greeting & Personal Best */}
-          <div className="nbr-card flex flex-col gap-4 p-6">
-            <h1 className="nbr-display-heavy text-4xl sm:text-5xl uppercase truncate max-w-full">
+          {/* Top Header - Greeting & Personal Best */}
+          <div className="flex flex-col gap-2 px-2">
+            <h1 className="nbr-display-heavy text-4xl sm:text-5xl uppercase truncate max-w-full text-[var(--text-primary)]">
               {user.username}
             </h1>
-            <div className="flex flex-col gap-2">
-              <p className="text-sm font-700 uppercase tracking-widest text-[var(--text-muted)]">
-                Personal Best
-              </p>
-              <div className="flex items-center gap-4">
-                <span className="nbr-mono text-4xl text-[var(--text-primary)]">
-                  {personalBest}
-                </span>
-                {hasHeldNumberOneRank && (
-                  <div
-                    title="#1 Rank Achieved"
-                    className="flex items-center justify-center bg-[var(--accent-teal)] border-[2.5px] border-[var(--border)] rounded-full rotate-[15deg] shadow-[2px_2px_0_var(--shadow)]"
-                    style={{ width: '2.5rem', height: '2.5rem' }}
-                  >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--text-primary)' }}>
-                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-                    </svg>
-                  </div>
-                )}
-              </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-700 uppercase tracking-widest text-[var(--text-muted)]">
+                Max CPS:
+              </span>
+              <span className="nbr-mono text-xl text-[var(--text-primary)]">
+                {(user.stats?.highestCps ?? 0).toFixed(2)}
+              </span>
             </div>
           </div>
 
@@ -188,6 +173,33 @@ export function HomeHub() {
           </div>
         </motion.div>
       </div>
+
+      {/* Loading Overlay */}
+      <AnimatePresence>
+        {isLoading && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 flex items-center justify-center z-50 backdrop-blur-sm bg-black/20"
+          >
+            <div
+              className="flex flex-col items-center justify-center gap-6 p-8"
+              style={{
+                background: 'var(--surface)',
+                border: '3px solid var(--border)',
+                borderRadius: '20px',
+                boxShadow: '6px 6px 0 var(--shadow)',
+              }}
+            >
+              <div className="nbr-spinner-dark" style={{ width: '3rem', height: '3rem', borderWidth: '5px' }} />
+              <p className="text-sm font-700 uppercase tracking-widest text-[var(--text-muted)]">
+                Starting Game...
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

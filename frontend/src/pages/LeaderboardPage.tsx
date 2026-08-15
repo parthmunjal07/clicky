@@ -57,22 +57,12 @@ export function LeaderboardPage({ onReturnToDashboard }: LeaderboardPageProps) {
       className="min-h-[100dvh] relative nbr-dot-grid flex flex-col"
       style={{ backgroundColor: 'var(--bg)' }}
     >
-      <div className="absolute top-0 left-0 p-6 z-20">
-        <button
-          onClick={onReturnToDashboard}
-          className="text-sm font-700 uppercase tracking-widest nbr-link"
-          style={{ letterSpacing: '0.12em', color: 'var(--text-muted)' }}
-        >
-          &larr; Dashboard
-        </button>
-      </div>
-
-      <div className="relative z-10 flex flex-col items-center pt-16 pb-32 px-6 sm:px-12 w-full max-w-[480px] mx-auto">
+      <div className="flex-1 w-full flex flex-col items-center pt-6 pb-32 px-6 sm:px-12">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-          className="w-full flex flex-col gap-8"
+          className="w-full max-w-3xl flex flex-col items-center gap-8"
         >
           <div className="text-center">
             <h1 className="nbr-display-heavy text-4xl uppercase" style={{ color: 'var(--text-primary)' }}>
@@ -80,36 +70,45 @@ export function LeaderboardPage({ onReturnToDashboard }: LeaderboardPageProps) {
             </h1>
           </div>
 
-          <div className="flex flex-col gap-6">
-            <div className="nbr-segment-group">
-              {(['global', 'monthly', 'weekly', 'daily'] as Timeframe[]).map((tab) => (
-                <button
-                  key={tab}
-                  className={`nbr-segment-btn ${activeTab === tab ? 'nbr-segment-btn-active' : ''}`}
-                  onClick={() => setFilter({ range: tab })}
-                >
-                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                </button>
-              ))}
+          <div className="flex flex-col gap-10 w-full max-w-lg">
+            {/* Top Row: Timeframes */}
+            <div className="flex justify-center gap-3">
+              {(['global', 'monthly', 'weekly', 'daily'] as Timeframe[]).map((tab) => {
+                const isActive = activeTab === tab;
+                return (
+                  <button
+                    key={tab}
+                    className={`py-2 px-4 md:px-5 rounded-full text-xs sm:text-sm font-700 uppercase tracking-widest border-[2.5px] border-[var(--border)] transition-all ${
+                      isActive 
+                        ? 'bg-[var(--accent-yellow)] shadow-[3px_3px_0_var(--shadow)] translate-x-[-1px] translate-y-[-1px]' 
+                        : 'bg-[var(--surface)] text-[var(--text-muted)] hover:bg-[var(--bg)] shadow-none'
+                    }`}
+                    onClick={() => setFilter({ range: tab })}
+                  >
+                    {tab}
+                  </button>
+                );
+              })}
             </div>
-
-            <div className="flex flex-col items-center gap-6">
-              <div className="flex justify-center gap-4">
+            
+            {/* Middle Row: Modes */}
+            <div className="flex flex-col items-center gap-4">
+              <div className="flex justify-center gap-6 w-full px-8">
                 <button
-                  className={`py-2 px-6 rounded-full text-sm font-700 uppercase tracking-widest transition-all ${
-                    activeMode === 'timer'
-                      ? 'bg-[var(--accent-coral)] text-white shadow-[2px_2px_0_var(--shadow)] border-[2.5px] border-[var(--border)]'
-                      : 'bg-[var(--surface)] text-[var(--text-muted)] border-[2.5px] border-transparent hover:border-[var(--border)]'
+                  className={`flex-1 py-3 px-6 rounded-full text-sm font-700 uppercase tracking-widest border-[2.5px] border-[var(--border)] transition-all ${
+                    activeMode === 'timer' 
+                      ? 'bg-[var(--accent-coral)] text-white shadow-[4px_4px_0_var(--shadow)] translate-x-[-2px] translate-y-[-2px]' 
+                      : 'bg-[var(--surface)] text-[var(--text-muted)] hover:bg-[var(--bg)] shadow-[2px_2px_0_var(--shadow)] translate-x-[1px] translate-y-[1px]'
                   }`}
                   onClick={() => setFilter({ mode: 'timer', value: String(getValidValue('timer', activeValue)) })}
                 >
                   Timer
                 </button>
                 <button
-                  className={`py-2 px-6 rounded-full text-sm font-700 uppercase tracking-widest transition-all ${
-                    activeMode === 'clicks'
-                      ? 'bg-[var(--accent-blue)] text-white shadow-[2px_2px_0_var(--shadow)] border-[2.5px] border-[var(--border)]'
-                      : 'bg-[var(--surface)] text-[var(--text-muted)] border-[2.5px] border-transparent hover:border-[var(--border)]'
+                  className={`flex-1 py-3 px-6 rounded-full text-sm font-700 uppercase tracking-widest border-[2.5px] border-[var(--border)] transition-all ${
+                    activeMode === 'clicks' 
+                      ? 'bg-[var(--accent-blue)] text-white shadow-[4px_4px_0_var(--shadow)] translate-x-[-2px] translate-y-[-2px]' 
+                      : 'bg-[var(--surface)] text-[var(--text-muted)] hover:bg-[var(--bg)] shadow-[2px_2px_0_var(--shadow)] translate-x-[1px] translate-y-[1px]'
                   }`}
                   onClick={() => setFilter({ mode: 'clicks', value: String(getValidValue('clicks', activeValue)) })}
                 >
@@ -117,32 +116,26 @@ export function LeaderboardPage({ onReturnToDashboard }: LeaderboardPageProps) {
                 </button>
               </div>
 
-              <div className="flex items-center gap-4">
-                {activeMode === 'timer' && [30, 20, 10].map(val => (
+              {/* Bottom Row: Sub-values (kept for functionality, styled quietly) */}
+              <div className="flex gap-2">
+                {(activeMode === 'timer' ? [30, 20, 10] : [50, 25, 10]).map(val => (
                   <button
                     key={val}
-                    className={`nbr-pill px-6 py-3 text-lg ${activeValue === val ? 'nbr-pill-active' : ''}`}
+                    className={`py-1 px-3 rounded-full text-xs font-700 uppercase tracking-widest transition-colors ${
+                      activeValue === val ? 'bg-[var(--accent-teal)] text-[var(--text-primary)] border-[1.5px] border-[var(--border)]' : 'text-[var(--text-muted)] hover:bg-[rgba(26,26,26,0.05)] border-[1.5px] border-transparent'
+                    }`}
                     onClick={() => setFilter({ value: String(val) })}
                   >
-                    {val}s
-                  </button>
-                ))}
-                {activeMode === 'clicks' && [50, 25, 10].map(val => (
-                  <button
-                    key={val}
-                    className={`nbr-pill px-6 py-3 text-lg ${activeValue === val ? 'nbr-pill-active' : ''}`}
-                    onClick={() => setFilter({ value: String(val) })}
-                  >
-                    {val}
+                    {val}{activeMode === 'timer' ? 's' : ''}
                   </button>
                 ))}
               </div>
             </div>
 
-            <div className="flex flex-col gap-3 min-h-[300px]">
+            <div className="flex flex-col gap-3">
               {isLoading ? (
                 [1, 2, 3, 4, 5].map(i => (
-                  <div key={i} className="nbr-lb-row flex items-center justify-between px-5 py-4 w-full opacity-50 animate-pulse">
+                  <div key={i} className="flex items-center justify-between px-6 py-4 w-full opacity-50 animate-pulse border-[2.5px] border-[var(--border)] rounded-full shadow-[3px_3px_0_var(--shadow)] bg-[var(--surface)]">
                     <div className="flex items-center gap-4">
                       <div className="bg-gray-300 rounded-full w-8 h-8 border-[2px] border-[var(--border)]" />
                       <div className="flex items-center gap-3">
@@ -168,9 +161,9 @@ export function LeaderboardPage({ onReturnToDashboard }: LeaderboardPageProps) {
                     {scores.map((item) => {
                       const isFirst = item.rank === 1;
                       const isCurrentUser = item.id === user?.id;
-                      let rowClass = 'nbr-lb-row';
-                      if (isFirst) rowClass += ' nbr-lb-row-gold';
-                      else if (isCurrentUser) rowClass += ' nbr-lb-row-user';
+                      let rowBg = 'bg-white';
+                      if (isFirst) rowBg = 'bg-[var(--accent-yellow)]';
+                      else if (isCurrentUser) rowBg = 'bg-[#FFDED6]';
   
                       return (
                         <motion.div
@@ -179,7 +172,7 @@ export function LeaderboardPage({ onReturnToDashboard }: LeaderboardPageProps) {
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, scale: 0.95 }}
                           key={item.id}
-                          className={`${rowClass} flex items-center justify-between px-5 py-4 w-full`}
+                          className={`${rowBg} flex items-center justify-between px-6 py-4 w-full border-[2.5px] border-[var(--border)] rounded-full shadow-[4px_4px_0_var(--shadow)]`}
                         >
                           <div className="flex items-center gap-4 overflow-hidden">
                             <div className="flex items-center justify-center bg-white w-8 h-8 border-[2px] border-[var(--border)] rounded-full flex-shrink-0">
