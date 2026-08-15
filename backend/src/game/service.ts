@@ -46,6 +46,10 @@ export function getSortDirection(modeType: 'timer' | 'clicks'): 'asc' | 'desc' {
   return modeType === 'timer' ? 'desc' : 'asc';
 }
 
+export function clampClicksToTarget(clicks: number, target: number): number {
+  return Math.min(Math.max(clicks, 0), target);
+}
+
 // ─── Start Session ──────────────────────────────────────────────────────────
 
 export async function startSession(
@@ -150,11 +154,17 @@ export async function recordClick(
     }
   }
 
+  // ── Clicks mode: do not exceed the configured target ──
+  if (entry.modeType === 'clicks' && entry.clicks >= entry.modeValue) {
+    return finalizeClicksMode(sessionId, entry, now);
+  }
+
   // ── CPS anti-cheat ──
   validateClickRate(entry, now, 1);
 
   // ── Record the click ──
   entry.clicks += 1;
+  entry.clicks = clampClicksToTarget(entry.clicks, entry.modeValue);
   entry.lastClickAt = now;
   entry.recentClickTimestamps.push(now);
   if (seqNum !== undefined) {
@@ -195,11 +205,20 @@ export async function recordClickBatch(
     }
   }
 
+  if (entry.modeType === 'clicks' && entry.clicks >= entry.modeValue) {
+    return finalizeClicksMode(sessionId, entry, now);
+  }
+
+  const safeCount = entry.modeType === 'clicks'
+    ? Math.min(Math.max(count, 0), Math.max(0, entry.modeValue - entry.clicks))
+    : count;
+
   // ── Batch anti-cheat: validate count against elapsed time ──
-  validateClickRate(entry, now, count);
+  validateClickRate(entry, now, safeCount);
 
   // ── Record the batch ──
-  entry.clicks += count;
+  entry.clicks += safeCount;
+  entry.clicks = clampClicksToTarget(entry.clicks, entry.modeValue);
   entry.lastClickAt = now;
   entry.lastSeqNum = seqNum;
   // For batches, we record a single timestamp (the batch arrival time)
@@ -209,9 +228,6 @@ export async function recordClickBatch(
 
   // ── Clicks mode: auto-finalize when target reached ──
   if (entry.modeType === 'clicks' && entry.clicks >= entry.modeValue) {
-    // Cap clicks at target — don't over-count
-    entry.clicks = entry.modeValue;
-    hotStore.update(sessionId, entry);
     return finalizeClicksMode(sessionId, entry, now);
   }
 

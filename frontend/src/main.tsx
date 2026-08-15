@@ -5,6 +5,12 @@ import { Analytics } from '@vercel/analytics/react'
 import './index.css'
 import App from './App.tsx'
 
+const isVercelDeployment = Boolean(import.meta.env.VERCEL_ENV) ||
+  (typeof window !== 'undefined' && (
+    window.location.hostname.endsWith('.vercel.app') ||
+    window.location.hostname.includes('vercel')
+  ))
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -18,7 +24,7 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <App />
-      <Analytics />
+      {isVercelDeployment && <Analytics />}
     </QueryClientProvider>
   </StrictMode>,
 )
