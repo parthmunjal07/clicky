@@ -1,5 +1,6 @@
-const API_BASE = '/auth';
-const ADMIN_BASE = '/admin';
+const API_ORIGIN = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/+$/, '');
+const API_BASE = API_ORIGIN ? `${API_ORIGIN}/auth` : '/auth';
+const ADMIN_BASE = API_ORIGIN ? `${API_ORIGIN}/admin` : '/admin';
 
 type FetchOptions = {
   method?: string;
@@ -48,7 +49,9 @@ export async function apiRequest<T>(
     ...headers,
   };
 
-  let res = await fetch(url, {
+  const normalizedUrl = url.startsWith('http') ? url : `${API_ORIGIN || ''}${url}`;
+
+  let res = await fetch(normalizedUrl, {
     method,
     headers: requestHeaders,
     body: body ? JSON.stringify(body) : undefined,
@@ -60,7 +63,7 @@ export async function apiRequest<T>(
     const refreshed = await refreshAccessToken();
     if (refreshed) {
       // Retry the original request
-      res = await fetch(url, {
+      res = await fetch(normalizedUrl, {
         method,
         headers: requestHeaders,
         body: body ? JSON.stringify(body) : undefined,

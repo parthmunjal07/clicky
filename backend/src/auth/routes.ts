@@ -23,13 +23,13 @@ const isProd = process.env.NODE_ENV === 'production';
 const accessCookieOptions = {
   httpOnly: true,
   secure: isProd,
-  sameSite: 'lax' as const,
+  sameSite: (isProd ? 'none' : 'lax') as 'none' | 'lax',
   maxAge: 15 * 60 * 1000, // 15 minutes
 };
 const refreshCookieOptions = {
   httpOnly: true,
   secure: isProd,
-  sameSite: 'lax' as const,
+  sameSite: (isProd ? 'none' : 'lax') as 'none' | 'lax',
   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
 };
 
