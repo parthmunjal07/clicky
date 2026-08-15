@@ -102,6 +102,19 @@ router.post(
 );
 
 
+router.post(
+  '/game/abandon',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const result = await gameService.abandonSession(req.user!.id);
+      res.status(200).json(result);
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+
 router.get(
   '/game/session/:id',
   async (req: Request, res: Response, next: NextFunction) => {

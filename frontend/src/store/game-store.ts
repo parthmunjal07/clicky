@@ -27,6 +27,7 @@ interface GameState {
     addPendingClicks: (count: number) => void;
     flushClicks: () => Promise<void>;
     endSession: () => Promise<void>;
+    abandonSession: () => Promise<void>;
     decrementCountdown: () => void;
     setStatus: (status: GameStatus) => void;
     reset: () => void;
@@ -159,6 +160,19 @@ export const useGameStore = create<GameState>((set, get) => ({
         });
       } catch (err) {
         set({ status: 'error' });
+      }
+    },
+
+    abandonSession: async () => {
+      const { sessionId } = get();
+      if (!sessionId) return;
+      
+      try {
+        await gameApi.abandonSession();
+      } catch (err) {
+        console.error('Failed to abandon session:', err);
+      } finally {
+        set({ ...INITIAL_STATE });
       }
     },
 

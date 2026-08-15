@@ -182,7 +182,21 @@ export function GamePage({ onReturnToDashboard }: GamePageProps) {
           </span>
         </div>
 
-
+        {/* Top Right: Abandon Button */}
+        {(store.status === 'active' || store.status === 'countdown') && (
+          <div className="absolute top-6 right-6 sm:top-8 sm:right-8 z-20">
+            <button
+              onClick={async () => {
+                await store.actions.abandonSession();
+                navigate('/home', { replace: true });
+              }}
+              className="nbr-btn-ghost flex items-center justify-center bg-[var(--surface)] hover:bg-[#FFEAE5] hover:text-[var(--accent-coral)]"
+              style={{ padding: '0.5rem 1rem', fontSize: '0.75rem' }}
+            >
+              Abandon
+            </button>
+          </div>
+        )}
 
         {/* Center: Giant Coral Orb */}
         <div className="relative">

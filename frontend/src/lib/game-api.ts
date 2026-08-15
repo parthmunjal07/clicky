@@ -62,6 +62,11 @@ export const gameApi = {
       headers: { 'x-session-id': sessionId },
     }),
 
+  abandonSession: () =>
+    apiRequest<{ success: boolean }>('/game/abandon', {
+      method: 'POST',
+    }),
+
   getSession: (sessionId: string) =>
     apiRequest<SessionStateResponse>(`/game/session/${sessionId}`, {
       method: 'GET',

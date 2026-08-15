@@ -52,21 +52,30 @@ export function clampClicksToTarget(clicks: number, target: number): number {
 
 // ─── Start Session ──────────────────────────────────────────────────────────
 
-export async function startSession(
-  userId: string,
-  modeType: 'timer' | 'clicks',
-  modeValue: number,
-) {
-  // ── One active session per user ──
-  const existingHotSession = hotStore.findActiveByUserId(userId);
-  if (existingHotSession) {
-    throw new AppError(409, 'You already have an active game session. Finish or abandon it first.');
+export async function abandonSession(userId: string) {
+  const existingHotSessionId = hotStore.findActiveByUserId(userId);
+  if (existingHotSessionId) {
+    const entry = hotStore.get(existingHotSessionId);
+    if (entry) {
+      await db
+        .update(gameSessions)
+        .set({
+          status: 'expired',
+          clickCount: entry.clicks,
+          serverEndedAt: new Date(),
+        })
+        .where(eq(gameSessions.id, existingHotSessionId));
+    }
+    hotStore.delete(existingHotSessionId);
   }
 
-  // ── Check DB for orphaned active sessions (survives server restart) ──
-  const orphanedSessions = await db
-    .select({ id: gameSessions.id })
-    .from(gameSessions)
+  // Clear any orphaned active sessions in DB
+  await db
+    .update(gameSessions)
+    .set({
+      status: 'expired',
+      serverEndedAt: new Date(),
+    })
     .where(
       and(
         eq(gameSessions.userId, userId),
@@ -74,21 +83,16 @@ export async function startSession(
       ),
     );
 
-  if (orphanedSessions.length > 0) {
-    // Auto-expire orphaned sessions
-    await db
-      .update(gameSessions)
-      .set({
-        status: 'expired',
-        serverEndedAt: new Date(),
-      })
-      .where(
-        and(
-          eq(gameSessions.userId, userId),
-          eq(gameSessions.status, 'active'),
-        ),
-      );
-  }
+  return { success: true };
+}
+
+export async function startSession(
+  userId: string,
+  modeType: 'timer' | 'clicks',
+  modeValue: number,
+) {
+  // ── Abandon any active sessions for this user ──
+  await abandonSession(userId);
 
   // ── Create DB row ──
   const now = new Date();
