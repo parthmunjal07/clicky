@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { AnimatePresence } from 'motion/react';
 import { useSearchParams } from 'react-router-dom';
 import { LoginForm } from '../components/LoginForm';

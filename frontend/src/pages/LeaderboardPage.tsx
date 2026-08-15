@@ -11,7 +11,7 @@ interface LeaderboardPageProps {
   onReturnToDashboard: () => void;
 }
 
-export function LeaderboardPage({ onReturnToDashboard }: LeaderboardPageProps) {
+export function LeaderboardPage({ onReturnToDashboard: _onReturnToDashboard }: LeaderboardPageProps) {
   const { user } = useAuthStore();
   const { modeType: lastMode, modeValue: lastValue } = useGameStore();
   const navigate = useNavigate();

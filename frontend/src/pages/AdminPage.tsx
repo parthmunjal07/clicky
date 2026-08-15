@@ -119,8 +119,8 @@ export function AdminPage() {
     queryFn: () => adminApi.getUsers(page, 20, debouncedSearch),
   });
 
-  const users = data?.data?.users || [];
-  const pagination = data?.data?.pagination;
+  const users = data?.users || [];
+  const pagination = data?.pagination;
 
   return (
     <div
