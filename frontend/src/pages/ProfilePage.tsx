@@ -1,15 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuthStore } from '../store/auth-store';
 import { usersApi } from '../lib/users-api';
 import { showToast } from '../store/toast-store';
 
 export function ProfilePage() {
-  const { user, setAuth, clearAuth } = useAuthStore();
+  const { user, setAuth, clearAuth, hydrate } = useAuthStore();
   const [isEditing, setIsEditing] = useState(false);
   const [displayName, setDisplayName] = useState(user?.displayName || '');
   const [avatarUrl, setAvatarUrl] = useState(user?.avatarUrl || '');
   const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    hydrate();
+  }, [hydrate]);
 
   if (!user) return null;
 

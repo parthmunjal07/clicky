@@ -20,6 +20,18 @@ export default defineConfig({
         target: 'http://localhost:5000',
         changeOrigin: true,
       },
+      '/users': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
+      '/leaderboard': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
+      '/game': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
     },
   },
 })

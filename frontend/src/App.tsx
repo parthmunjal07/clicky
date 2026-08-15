@@ -72,7 +72,7 @@ export default function App() {
         <Route path="/" element={<Navigate to="/home" replace />} />
         
         {/* Auth Route */}
-        <Route path="/auth" element={<AuthRoute />} />
+        <Route path="/login" element={<AuthRoute />} />
 
         {/* Protected Routes wrapped in AppShell */}
         <Route element={<AppShell />}>

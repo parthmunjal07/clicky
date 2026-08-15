@@ -13,7 +13,7 @@ export function AppShell() {
       // ignore API failure, still log out locally
     }
     clearAuth();
-    navigate('/auth');
+    navigate('/login');
   }
 
   const navLinkClass = ({ isActive }: { isActive: boolean }) => {

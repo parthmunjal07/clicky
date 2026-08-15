@@ -248,6 +248,7 @@ export async function endSession(userId: string, sessionId: string) {
       status: 'completed',
       clickCount: score,
       score,
+      elapsedMs,
       serverEndedAt,
     })
     .where(eq(gameSessions.id, sessionId));

@@ -135,9 +135,47 @@ router.get(
     try {
       const page = Math.max(1, parseInt(req.query.page as string) || 1);
       const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
+      const search = req.query.search as string | undefined;
 
-      const result = await authService.listUsers(page, limit);
+      const result = await authService.listUsers(page, limit, search);
       res.status(200).json(result);
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+// ─── GET /admin/users/:id/history ───────────────────────────────────────────
+
+router.get(
+  '/admin/users/:id/history',
+  authenticate,
+  requireRole('admin'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!req.params.id) throw new AppError(400, 'User ID is required');
+      // Reusing getUserProfile to get the same shape of history and stats
+      // We will lazy-import usersService to avoid circular dependency issues if any
+      const usersService = await import('../users/service.js');
+      const profile = await usersService.getUserProfile(req.params.id as string);
+      res.status(200).json({ user: profile });
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+// ─── POST /admin/users/:id/unlock ───────────────────────────────────────────
+
+router.post(
+  '/admin/users/:id/unlock',
+  authenticate,
+  requireRole('admin'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!req.params.id) throw new AppError(400, 'User ID is required');
+      const result = await authService.unlockUser(req.user!.id, req.params.id as string);
+      res.status(200).json({ user: result });
     } catch (err) {
       next(err);
     }

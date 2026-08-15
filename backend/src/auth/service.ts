@@ -1,4 +1,4 @@
-import { eq, and, isNull, sql, lt } from 'drizzle-orm';
+import { eq, and, isNull, sql, lt, ilike, or } from 'drizzle-orm';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import crypto from 'node:crypto';
@@ -307,11 +307,17 @@ export async function logout(refreshToken: string) {
 
 
 
+// ... 
+
 /**
  * Paginated list of users (admin-only).
  */
-export async function listUsers(page: number = 1, limit: number = 20) {
+export async function listUsers(page: number = 1, limit: number = 20, search?: string) {
   const offset = (page - 1) * limit;
+
+  const searchFilter = search
+    ? or(ilike(users.username, `%${search}%`), ilike(users.email, `%${search}%`))
+    : undefined;
 
   const [usersList, countResult] = await Promise.all([
     db
@@ -323,10 +329,13 @@ export async function listUsers(page: number = 1, limit: number = 20) {
         createdAt: users.createdAt,
       })
       .from(users)
+      .where(searchFilter)
       .orderBy(users.createdAt)
       .limit(limit)
       .offset(offset),
-    db.select({ count: sql<number>`cast(count(*) as int)` }).from(users),
+    db.select({ count: sql<number>`cast(count(*) as int)` })
+      .from(users)
+      .where(searchFilter),
   ]);
 
   const total = countResult[0]?.count ?? 0;
@@ -340,6 +349,31 @@ export async function listUsers(page: number = 1, limit: number = 20) {
       totalPages: Math.ceil(total / limit),
     },
   };
+}
+
+/**
+ * Unlock user account manually (admin-only).
+ */
+export async function unlockUser(adminId: string, targetUserId: string) {
+  const [updatedUser] = await db
+    .update(users)
+    .set({
+      failedLoginAttempts: 0,
+      lockedUntil: null,
+      updatedAt: new Date(),
+    })
+    .where(eq(users.id, targetUserId))
+    .returning();
+
+  if (!updatedUser) {
+    throw new AppError(404, 'User not found');
+  }
+
+  // Audit log
+  console.log(`[AUDIT] Admin ${adminId} unlocked user ${targetUserId} at ${new Date().toISOString()}`);
+
+  const { passwordHash, ...safeUser } = updatedUser;
+  return safeUser;
 }
 
 // ─── Error Class ────────────────────────────────────────────────────────────
