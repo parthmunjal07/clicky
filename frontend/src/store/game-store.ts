@@ -60,7 +60,8 @@ export const useGameStore = create<GameState>((set, get) => ({
         sessionId: res.sessionId,
         modeType,
         modeValue,
-        serverStartedAt: new Date(res.serverStartedAt).getTime(),
+        // Use local time for serverStartedAt to perfectly sync UI without clock skew
+        serverStartedAt: Date.now() + 3000,
         status: 'countdown',
         countdownValue: 3,
         optimisticClicks: 0,
@@ -81,7 +82,10 @@ export const useGameStore = create<GameState>((set, get) => ({
       }
       
       const res = await gameApi.getSession(sessionId);
-      const serverStartedAt = new Date(res.serverStartedAt).getTime();
+      // Reconstruct local serverStartedAt using elapsedMs to avoid clock skew
+      const serverStartedAt = res.elapsedMs !== undefined
+        ? Date.now() - res.elapsedMs
+        : new Date(res.serverStartedAt).getTime();
       const now = Date.now();
       const countdownRemainingMs = Math.max(0, serverStartedAt - now);
       const isCountdownActive = countdownRemainingMs > 0 && countdownRemainingMs <= 3000;
