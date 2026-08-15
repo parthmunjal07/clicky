@@ -1,12 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AnimatePresence } from 'motion/react';
+import { useSearchParams } from 'react-router-dom';
 import { LoginForm } from '../components/LoginForm';
 import { SignupForm } from '../components/SignupForm';
 
 type AuthMode = 'login' | 'signup';
 
 export function AuthPage() {
-  const [mode, setMode] = useState<AuthMode>('login');
+  const [searchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab') as AuthMode | null;
+  const [mode, setMode] = useState<AuthMode>(tabParam === 'login' ? 'login' : 'signup');
 
   return (
     <div

@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useAuthStore } from './store/auth-store';
+import { LandingPage } from './pages/LandingPage';
 import { AuthPage } from './pages/AuthPage';
 import { HomeHub } from './pages/HomeHub';
 import { GamePage } from './pages/GamePage';
@@ -26,6 +27,31 @@ function GamePageRoute() {
 function LeaderboardRoute() {
   const navigate = useNavigate();
   return <LeaderboardPage onReturnToDashboard={() => navigate('/home')} />;
+}
+
+function LandingRoute() {
+  const { isAuthenticated, isHydrated, isLoading } = useAuthStore();
+  
+  if (isLoading || !isHydrated) {
+    return (
+      <div
+        className="min-h-[100dvh] flex items-center justify-center nbr-dot-grid"
+        style={{ backgroundColor: 'var(--bg)' }}
+      >
+        <div className="relative z-10 flex flex-col items-center gap-4">
+          <div className="nbr-spinner-dark" style={{ width: '1.5rem', height: '1.5rem', borderWidth: '3px' }} />
+          <p
+            className="text-xs font-700 uppercase tracking-widest"
+            style={{ color: 'var(--text-muted)', letterSpacing: '0.12em' }}
+          >
+            Loading
+          </p>
+        </div>
+      </div>
+    );
+  }
+  
+  return <LandingPage isAuthenticated={isAuthenticated} />;
 }
 
 function AuthRoute() {
@@ -69,10 +95,12 @@ export default function App() {
       <OfflineBanner />
       <ToastContainer />
       <Routes>
-        <Route path="/" element={<Navigate to="/home" replace />} />
+        {/* Landing page for unauthenticated users */}
+        <Route path="/" element={<LandingRoute />} />
         
-        {/* Auth Route */}
-        <Route path="/login" element={<AuthRoute />} />
+        {/* Auth Routes */}
+        <Route path="/auth" element={<AuthRoute />} />
+        <Route path="/login" element={<Navigate to="/auth?tab=login" replace />} />
 
         {/* Protected Routes wrapped in AppShell */}
         <Route element={<AppShell />}>

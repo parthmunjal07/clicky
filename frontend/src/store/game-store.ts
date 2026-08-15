@@ -80,13 +80,22 @@ export const useGameStore = create<GameState>((set, get) => ({
       }
       
       const res = await gameApi.getSession(sessionId);
-      
+      const serverStartedAt = new Date(res.serverStartedAt).getTime();
+      const now = Date.now();
+      const countdownRemainingMs = Math.max(0, serverStartedAt - now);
+      const isCountdownActive = countdownRemainingMs > 0 && countdownRemainingMs <= 3000;
+
       set({
         sessionId: res.sessionId,
         modeType: res.modeType,
         modeValue: res.modeValue,
-        serverStartedAt: new Date(res.serverStartedAt).getTime(),
-        status: res.status === 'completed' || res.status === 'expired' ? 'completed' : 'active',
+        serverStartedAt,
+        status: res.status === 'completed' || res.status === 'expired'
+          ? 'completed'
+          : isCountdownActive
+            ? 'countdown'
+            : 'active',
+        countdownValue: isCountdownActive ? Math.max(1, Math.ceil(countdownRemainingMs / 1000)) : 3,
         optimisticClicks: res.clicks,
         serverClicks: res.clicks,
         serverScore: res.score ?? null,
@@ -154,7 +163,16 @@ export const useGameStore = create<GameState>((set, get) => ({
     },
 
     decrementCountdown: () => {
-      const { countdownValue } = get();
+      const { serverStartedAt, countdownValue } = get();
+      if (!serverStartedAt) return;
+
+      const remainingMs = serverStartedAt - Date.now();
+      if (remainingMs > 0) {
+        const nextValue = Math.max(1, Math.ceil(remainingMs / 1000));
+        set({ countdownValue: nextValue });
+        return;
+      }
+
       if (countdownValue > 1) {
         set({ countdownValue: countdownValue - 1 });
       } else {
