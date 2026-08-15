@@ -14,13 +14,16 @@ import { AdminPage } from './pages/AdminPage';
 import { OfflineBanner } from './components/OfflineBanner';
 import { ToastContainer } from './components/ToastContainer';
 import { AppShell } from './components/AppShell';
+import { Analytics } from '@vercel/analytics/react';
 
 function GamePageRoute() {
   const navigate = useNavigate();
-  return (
+  return (<>
     <GamePage
       onReturnToDashboard={() => navigate('/leaderboard')}
     />
+    <Analytics />
+  </>
   );
 }
 
@@ -31,7 +34,7 @@ function LeaderboardRoute() {
 
 function LandingRoute() {
   const { isAuthenticated, isHydrated, isLoading } = useAuthStore();
-  
+
   if (isLoading || !isHydrated) {
     return (
       <div
@@ -50,13 +53,13 @@ function LandingRoute() {
       </div>
     );
   }
-  
+
   return <LandingPage isAuthenticated={isAuthenticated} />;
 }
 
 function AuthRoute() {
   const { isAuthenticated, isHydrated, isLoading } = useAuthStore();
-  
+
   if (isLoading || !isHydrated) {
     return (
       <div
@@ -75,11 +78,11 @@ function AuthRoute() {
       </div>
     );
   }
-  
+
   if (isAuthenticated) {
     return <Navigate to="/home" replace />;
   }
-  
+
   return <AuthPage />;
 }
 
@@ -97,7 +100,7 @@ export default function App() {
       <Routes>
         {/* Landing page for unauthenticated users */}
         <Route path="/" element={<LandingRoute />} />
-        
+
         {/* Auth Routes */}
         <Route path="/auth" element={<AuthRoute />} />
         <Route path="/login" element={<Navigate to="/auth?tab=login" replace />} />
@@ -108,7 +111,7 @@ export default function App() {
           <Route path="/game/:sessionId" element={<ProtectedRoute><GamePageRoute /></ProtectedRoute>} />
           <Route path="/leaderboard" element={<ProtectedRoute><LeaderboardRoute /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-          
+
           {/* Admin Route */}
           <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
         </Route>
