@@ -16,8 +16,8 @@ export function AuthPage() {
       className="min-h-[100dvh] flex items-center justify-center relative nbr-dot-grid"
       style={{ backgroundColor: 'var(--bg)' }}
     >
-      {/* Auth card container — max-w-[480px], 24px horizontal padding on mobile */}
-      <div className="relative z-10 w-full max-w  -[480px] px-6 sm:px-12 my-12">
+      {/* Auth card container — max-w-[400px], 24px horizontal padding on mobile */}
+      <div className="relative z-10 w-full max-w-[580px] px-6 sm:px-12 my-12">
         {/* Wordmark — mb-8 (32px) section gap before the card */}
         <div className="mb-8 flex items-center gap-3">
           <div

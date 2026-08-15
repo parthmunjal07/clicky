@@ -162,8 +162,8 @@ export function GamePage({ onReturnToDashboard }: GamePageProps) {
   }
 
   return (
-    <div className="min-h-[100dvh] relative" style={{ backgroundColor: 'var(--bg)' }}>
-      <div className="relative z-10 flex flex-col items-center justify-center min-h-[100dvh] px-4 sm:px-6 pb-24 md:pb-12 overflow-hidden w-full mx-auto">
+    <div className="fixed inset-0" style={{ backgroundColor: 'var(--bg)' }}>
+      <div className="relative z-10 flex flex-col items-center justify-center h-full w-full px-4 sm:px-6 mx-auto overflow-hidden">
         
         {/* Top: Timer Badge */}
         <div
